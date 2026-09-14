@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:docvault/main.dart';
+import 'package:docvault/widgets/document_list_tile.dart';
 
 // 1x1 transparent PNG bytes
 final Uint8List kTransparentImage = Uint8List.fromList(<int>[
@@ -135,7 +136,7 @@ void main() {
     expect(find.text('Relatório Anual 2024'), findsNothing);
   });
 
-  testWidgets('Admin login with teste@teste.com / 12345 opens Admin screen and Edit Modal', (WidgetTester tester) async {
+  testWidgets('Admin login, Edit Modal, and Admin OptionsPanel with logout', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -144,7 +145,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Tap Opções
+    // Tap Opções on Home
     await tester.tap(find.text('Opções'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -158,7 +159,6 @@ void main() {
     // Verify Admin Screen is now active
     expect(find.text('ADMIN'), findsOneWidget);
     expect(find.text('Gerenciar documentos'), findsOneWidget);
-    expect(find.text('Ana Costa'), findsOneWidget);
 
     // Tap edit pencil on first Admin Card
     final editPencil = find.byIcon(Icons.edit_outlined).first;
@@ -180,14 +180,69 @@ void main() {
 
     // Tap Cancelar to close modal
     await tester.tap(find.text('Cancelar'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
-    // Logout back to user view
-    await tester.tap(find.text('Sair'));
+    // Open Opções menu from Admin header
+    await tester.tap(find.text('Opções'));
+    await tester.pumpAndSettle();
+
+    // Verify user info is displayed in OptionsPanel
+    expect(find.text('Teste'), findsOneWidget);
+    expect(find.text('Administrador'), findsOneWidget);
+    expect(find.text('Sair da conta'), findsOneWidget);
+
+    // Logout from OptionsPanel
+    await tester.tap(find.text('Sair da conta'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
+    // Back to user home view
     expect(find.text('Todos os documentos'), findsOneWidget);
+  });
+
+  testWidgets('List mode in Admin expands tile to reveal Edit and Delete buttons', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Log into Admin
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Entrar no Painel Admin'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Switch to List Mode
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Lista'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Verify DocumentListTile is rendered
+    expect(find.byType(DocumentListTile), findsWidgets);
+
+    // Tap on the first tile
+    await tester.tap(find.byType(DocumentListTile).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify inline Edit and Delete buttons appear
+    expect(find.text('Editar'), findsWidgets);
+    expect(find.text('Excluir'), findsWidgets);
+
+    // Tap on the tile again to collapse
+    await tester.tap(find.byType(DocumentListTile).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Editar'), findsNothing);
+    expect(find.text('Excluir'), findsNothing);
   });
 }

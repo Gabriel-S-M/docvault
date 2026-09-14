@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/document_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/admin_card.dart';
+import '../widgets/document_list_tile.dart';
 import '../widgets/edit_doc_modal.dart';
+import '../widgets/options_panel.dart';
 
 class AdminScreen extends StatefulWidget {
   final List<DocumentItem> docs;
@@ -11,6 +13,7 @@ class AdminScreen extends StatefulWidget {
   final ValueChanged<int> onDelete;
   final VoidCallback onLogout;
   final bool isDarkMode;
+  final ValueChanged<bool> onToggleDarkMode;
 
   const AdminScreen({
     super.key,
@@ -19,6 +22,7 @@ class AdminScreen extends StatefulWidget {
     required this.onDelete,
     required this.onLogout,
     required this.isDarkMode,
+    required this.onToggleDarkMode,
   });
 
   @override
@@ -29,10 +33,13 @@ class _AdminScreenState extends State<AdminScreen> {
   DocumentItem? _editingDoc;
   String _search = '';
   String _filterCat = 'Todos';
+  SortKey _sortKey = SortKey.date;
+  ViewMode _viewMode = ViewMode.grid;
+  bool _isPanelOpen = false;
 
   List<DocumentItem> get _visibleDocs {
     final query = _search.toLowerCase().trim();
-    return widget.docs.where((d) {
+    final list = widget.docs.where((d) {
       final matchCat = _filterCat == 'Todos' || d.category == _filterCat;
       final matchSearch = query.isEmpty ||
           d.title.toLowerCase().contains(query) ||
@@ -40,6 +47,21 @@ class _AdminScreenState extends State<AdminScreen> {
           d.category.toLowerCase().contains(query);
       return matchCat && matchSearch;
     }).toList();
+
+    list.sort((a, b) {
+      switch (_sortKey) {
+        case SortKey.date:
+          return b.date.compareTo(a.date);
+        case SortKey.title:
+          return a.title.compareTo(b.title);
+        case SortKey.size:
+          return b.sizeInMb.compareTo(a.sizeInMb);
+        case SortKey.pages:
+          return b.pages.compareTo(a.pages);
+      }
+    });
+
+    return list;
   }
 
   int _calculateCrossAxisCount(double width) {
@@ -51,33 +73,31 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _buildCategoryPill(String cat, bool isDark) {
     final isSelected = _filterCat == cat;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: InkWell(
-        onTap: () => setState(() => _filterCat = cat),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
+    return InkWell(
+      onTap: () => setState(() => _filterCat = cat),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.indigo700
+              : (isDark ? AppColors.stone800 : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
             color: isSelected
                 ? AppColors.indigo700
-                : (isDark ? AppColors.stone800 : Colors.white),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.indigo700
-                  : (isDark ? AppColors.stone700 : AppColors.stone200),
-            ),
+                : (isDark ? AppColors.stone700 : AppColors.stone200),
           ),
-          child: Text(
-            cat,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected
-                  ? Colors.white
-                  : (isDark ? AppColors.stone400 : AppColors.stone600),
-            ),
+        ),
+        child: Text(
+          cat,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.stone300 : AppColors.stone600),
           ),
         ),
       ),
@@ -89,6 +109,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final isDark = widget.isDarkMode;
     final visible = _visibleDocs;
     final size = MediaQuery.of(context).size;
+    final isDesktop = size.width >= 768;
     final crossAxisCount = _calculateCrossAxisCount(size.width);
 
     return Scaffold(
@@ -107,7 +128,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     ),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1280),
@@ -168,7 +189,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         Expanded(
                           child: Center(
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 380),
+                              constraints: const BoxConstraints(maxWidth: 450),
                               child: SizedBox(
                                 height: 38,
                                 child: TextField(
@@ -184,6 +205,13 @@ class _AdminScreenState extends State<AdminScreen> {
                                       size: 18,
                                       color: isDark ? AppColors.stone400 : AppColors.stone400,
                                     ),
+                                    suffixIcon: _search.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.close_rounded, size: 16),
+                                            splashRadius: 14,
+                                            onPressed: () => setState(() => _search = ''),
+                                          )
+                                        : null,
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                                     filled: true,
@@ -210,69 +238,78 @@ class _AdminScreenState extends State<AdminScreen> {
 
                         const SizedBox(width: 16),
 
-                        // User profile + Logout
-                        Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: const BoxDecoration(
-                                color: AppColors.indigo700,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'A',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                  ),
+                        // Doc Counter Badge
+                        if (isDesktop) ...[
+                          Text(
+                            '${visible.length} docs',
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 12,
+                              color: AppColors.stone400,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+
+                        // Opções Button (opens OptionsPanel with user info and Sair)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => setState(() => _isPanelOpen = !_isPanelOpen),
+                            borderRadius: BorderRadius.circular(8),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: _isPanelOpen
+                                    ? AppColors.indigo700
+                                    : (isDark ? AppColors.stone800 : Colors.white),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _isPanelOpen
+                                      ? AppColors.indigo700
+                                      : (isDark ? AppColors.stone600 : AppColors.stone200),
                                 ),
                               ),
-                            ),
-                            if (size.width >= 700) ...[
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    'Teste',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.stone200 : AppColors.stone800,
-                                    ),
+                                  Icon(
+                                    Icons.tune_rounded,
+                                    size: 15,
+                                    color: _isPanelOpen
+                                        ? Colors.white
+                                        : (isDark ? AppColors.stone200 : AppColors.stone700),
                                   ),
-                                  Text(
-                                    'Administrador',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.stone400,
+                                  if (isDesktop) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Opções',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: _isPanelOpen
+                                            ? Colors.white
+                                            : (isDark ? AppColors.stone200 : AppColors.stone700),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(width: 4),
+                                  AnimatedRotation(
+                                    turns: _isPanelOpen ? 0.5 : 0,
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 16,
+                                      color: _isPanelOpen
+                                          ? Colors.white
+                                          : (isDark ? AppColors.stone400 : AppColors.stone500),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 12),
-                            ],
-                            OutlinedButton.icon(
-                              onPressed: widget.onLogout,
-                              icon: const Icon(Icons.logout_rounded, size: 14),
-                              label: const Text('Sair'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: isDark ? AppColors.stone400 : AppColors.stone600,
-                                side: BorderSide(
-                                  color: isDark ? AppColors.stone600 : AppColors.stone200,
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                              ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -290,68 +327,43 @@ class _AdminScreenState extends State<AdminScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Toolbar Header
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          // Toolbar Header: Title & Individual Category Wrap
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Gerenciar documentos',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.3,
-                                        color: isDark ? AppColors.stone100 : AppColors.stone900,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${widget.docs.length} documentos cadastrados · clique no lápis para editar',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: isDark ? AppColors.stone400 : AppColors.stone500,
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                'Gerenciar documentos',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                  color: isDark ? AppColors.stone100 : AppColors.stone900,
                                 ),
                               ),
-
-                              // Filter Pills for Desktop
-                              if (size.width >= 800)
-                                Flexible(
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: kDocumentCategories
-                                          .map((c) => _buildCategoryPill(c, isDark))
-                                          .toList(),
-                                    ),
-                                  ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${widget.docs.length} documentos cadastrados · clique no lápis para editar',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark ? AppColors.stone400 : AppColors.stone500,
                                 ),
-                            ],
-                          ),
+                              ),
+                              const SizedBox(height: 14),
 
-                          // Mobile Filter categories row
-                          if (size.width < 800) ...[
-                            const SizedBox(height: 14),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
+                              // Categories wrap individually so they never get cut off
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: kDocumentCategories
                                     .map((c) => _buildCategoryPill(c, isDark))
                                     .toList(),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 22),
 
-                          // Card Grid
+                          // Card Grid or List
                           if (visible.isEmpty)
                             Center(
                               child: Padding(
@@ -377,7 +389,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 ),
                               ),
                             )
-                          else
+                          else if (_viewMode == ViewMode.grid)
                             GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -408,6 +420,34 @@ class _AdminScreenState extends State<AdminScreen> {
                                   },
                                 );
                               },
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: visible.length,
+                              itemBuilder: (context, index) {
+                                final doc = visible[index];
+                                return DocumentListTile(
+                                  doc: doc,
+                                  isDarkMode: isDark,
+                                  isAdmin: true,
+                                  onTap: () {},
+                                  onEdit: (selected) {
+                                    setState(() => _editingDoc = selected);
+                                  },
+                                  onDelete: (id) {
+                                    widget.onDelete(id);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Documento excluído com sucesso.'),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: AppColors.stone800,
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
                             ),
 
                           const SizedBox(height: 48),
@@ -419,6 +459,46 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
             ],
           ),
+
+          // Options Panel Overlay
+          if (_isPanelOpen) ...[
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _isPanelOpen = false),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            Positioned(
+              top: 56,
+              right: 16,
+              child: OptionsPanel(
+                isDarkMode: isDark,
+                onToggleDarkMode: widget.onToggleDarkMode,
+                currentSortKey: _sortKey,
+                onSortKeyChanged: (key) {
+                  setState(() {
+                    _sortKey = key;
+                    _isPanelOpen = false;
+                  });
+                },
+                currentViewMode: _viewMode,
+                onViewModeChanged: (mode) {
+                  setState(() {
+                    _viewMode = mode;
+                    _isPanelOpen = false;
+                  });
+                },
+                isLoggedIn: true,
+                onLogin: () {},
+                onLogout: () {
+                  setState(() => _isPanelOpen = false);
+                  widget.onLogout();
+                },
+                onClose: () => setState(() => _isPanelOpen = false),
+              ),
+            ),
+          ],
 
           // Edit Document Side Sheet / Modal
           if (_editingDoc != null)

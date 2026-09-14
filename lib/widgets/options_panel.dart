@@ -54,7 +54,6 @@ class _OptionsPanelState extends State<OptionsPanel> {
       widget.onLogin();
       widget.onClose();
     } else if (email.isNotEmpty && pass.isNotEmpty) {
-      // In testing mode, also accept or show note
       setState(() => _errorMessage = null);
       widget.onLogin();
       widget.onClose();
@@ -100,7 +99,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'CONTA / ADMIN',
+                      'CONTA',
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -116,7 +115,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'Teste',
+                          'Admin',
                           style: GoogleFonts.jetBrainsMono(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
@@ -126,64 +125,89 @@ class _OptionsPanelState extends State<OptionsPanel> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 if (widget.isLoggedIn)
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: AppColors.indigo700,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'A',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                      Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: const BoxDecoration(
+                              color: AppColors.indigo700,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'A',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Teste',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? AppColors.stone100 : AppColors.stone900,
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Teste',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'Administrador',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? AppColors.indigo400 : AppColors.indigo600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              'Administrador',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.stone400,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () {
-                          widget.onLogout();
-                          widget.onClose();
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'Sair',
-                          style: TextStyle(fontSize: 12, color: Colors.redAccent),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 34,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            widget.onLogout();
+                            widget.onClose();
+                          },
+                          icon: const Icon(
+                            Icons.logout_rounded,
+                            size: 14,
+                            color: Colors.redAccent,
+                          ),
+                          label: const Text(
+                            'Sair da conta',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.redAccent,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: isDark ? AppColors.stone700 : AppColors.stone200,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
                         ),
                       ),
                     ],

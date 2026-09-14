@@ -102,6 +102,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
         onDelete: _handleDeleteDoc,
         onLogout: () => setState(() => _isAdminMode = false),
         isDarkMode: isDark,
+        onToggleDarkMode: widget.onToggleDarkMode,
       );
     }
 
