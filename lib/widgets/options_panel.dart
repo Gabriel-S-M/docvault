@@ -34,8 +34,9 @@ class OptionsPanel extends StatefulWidget {
 }
 
 class _OptionsPanelState extends State<OptionsPanel> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(text: 'teste@teste.com');
+  final _passwordController = TextEditingController(text: '12345');
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -45,8 +46,22 @@ class _OptionsPanelState extends State<OptionsPanel> {
   }
 
   void _handleLogin() {
-    if (_emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+    final email = _emailController.text.trim();
+    final pass = _passwordController.text.trim();
+
+    if (email == 'teste@teste.com' && pass == '12345') {
+      setState(() => _errorMessage = null);
       widget.onLogin();
+      widget.onClose();
+    } else if (email.isNotEmpty && pass.isNotEmpty) {
+      // In testing mode, also accept or show note
+      setState(() => _errorMessage = null);
+      widget.onLogin();
+      widget.onClose();
+    } else {
+      setState(() {
+        _errorMessage = 'Preencha e-mail e senha (teste@teste.com / 12345)';
+      });
     }
   }
 
@@ -75,20 +90,41 @@ class _OptionsPanelState extends State<OptionsPanel> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Section 1: CONTA
+          // Section 1: CONTA / LOGIN ADMIN
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'CONTA',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: AppColors.stone400,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'CONTA / ADMIN',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                        color: AppColors.stone400,
+                      ),
+                    ),
+                    if (!widget.isLoggedIn)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.indigo500.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Teste',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.indigo600,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 if (widget.isLoggedIn)
@@ -118,7 +154,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Ana Costa',
+                              'Teste',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -126,7 +162,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                               ),
                             ),
                             Text(
-                              'ana@empresa.com.br',
+                              'Administrador',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppColors.stone400,
@@ -136,7 +172,10 @@ class _OptionsPanelState extends State<OptionsPanel> {
                         ),
                       ),
                       TextButton(
-                        onPressed: widget.onLogout,
+                        onPressed: () {
+                          widget.onLogout();
+                          widget.onClose();
+                        },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           minimumSize: Size.zero,
@@ -151,6 +190,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                   )
                 else
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
                         height: 36,
@@ -161,7 +201,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                             color: isDark ? AppColors.stone100 : AppColors.stone900,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'E-mail',
+                            hintText: 'E-mail (teste@teste.com)',
                             filled: true,
                             fillColor: isDark ? AppColors.stone800 : Colors.white,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
@@ -190,7 +230,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                             color: isDark ? AppColors.stone100 : AppColors.stone900,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Senha',
+                            hintText: 'Senha (12345)',
                             filled: true,
                             fillColor: isDark ? AppColors.stone800 : Colors.white,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
@@ -208,6 +248,13 @@ class _OptionsPanelState extends State<OptionsPanel> {
                           ),
                         ),
                       ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _errorMessage!,
+                          style: const TextStyle(fontSize: 10.5, color: Colors.redAccent),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
@@ -224,7 +271,7 @@ class _OptionsPanelState extends State<OptionsPanel> {
                             padding: EdgeInsets.zero,
                           ),
                           child: const Text(
-                            'Entrar',
+                            'Entrar no Painel Admin',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                           ),
                         ),

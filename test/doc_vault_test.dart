@@ -135,7 +135,7 @@ void main() {
     expect(find.text('Relatório Anual 2024'), findsNothing);
   });
 
-  testWidgets('Opening and closing Options Panel', (WidgetTester tester) async {
+  testWidgets('Admin login with teste@teste.com / 12345 opens Admin screen and Edit Modal', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -149,11 +149,45 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Panel sections should now be present
-    expect(find.text('CONTA'), findsOneWidget);
-    expect(find.text('APARÊNCIA'), findsOneWidget);
-    expect(find.text('VISUALIZAÇÃO'), findsOneWidget);
-    expect(find.text('EXIBIÇÃO'), findsOneWidget);
-    expect(find.text('Modo escuro'), findsOneWidget);
+    // Submit admin login
+    expect(find.text('Entrar no Painel Admin'), findsOneWidget);
+    await tester.tap(find.text('Entrar no Painel Admin'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify Admin Screen is now active
+    expect(find.text('ADMIN'), findsOneWidget);
+    expect(find.text('Gerenciar documentos'), findsOneWidget);
+    expect(find.text('Ana Costa'), findsOneWidget);
+
+    // Tap edit pencil on first Admin Card
+    final editPencil = find.byIcon(Icons.edit_outlined).first;
+    await tester.tap(editPencil);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Tap "Editar documento" in popover
+    expect(find.text('Editar documento'), findsWidgets);
+    await tester.tap(find.text('Editar documento').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Verify Edit Modal appears with Automatic PDF Metadata
+    expect(find.text('ADMINISTRAÇÃO'), findsOneWidget);
+    expect(find.text('METADADOS DO PDF'), findsOneWidget);
+    expect(find.text('Automático'), findsOneWidget);
+    expect(find.text('Salvar alterações'), findsOneWidget);
+
+    // Tap Cancelar to close modal
+    await tester.tap(find.text('Cancelar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Logout back to user view
+    await tester.tap(find.text('Sair'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Todos os documentos'), findsOneWidget);
   });
 }

@@ -7,6 +7,7 @@ import '../widgets/document_card.dart';
 import '../widgets/document_list_tile.dart';
 import '../widgets/options_panel.dart';
 import '../widgets/pdf_modal.dart';
+import 'admin_screen.dart';
 
 class DocVaultScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -23,18 +24,25 @@ class DocVaultScreen extends StatefulWidget {
 }
 
 class _DocVaultScreenState extends State<DocVaultScreen> {
+  late List<DocumentItem> _docs;
   String _activeCategory = 'Todos';
   String _searchQuery = '';
   SortKey _sortKey = SortKey.date;
   ViewMode _viewMode = ViewMode.grid;
   bool _isPanelOpen = false;
-  bool _isLoggedIn = false;
+  bool _isAdminMode = false;
   DocumentItem? _openDoc;
+
+  @override
+  void initState() {
+    super.initState();
+    _docs = List.from(kMockDocuments);
+  }
 
   List<DocumentItem> get _filteredDocuments {
     final query = _searchQuery.toLowerCase().trim();
 
-    final list = kMockDocuments.where((doc) {
+    final list = _docs.where((doc) {
       final matchesCategory =
           _activeCategory == 'Todos' || doc.category == _activeCategory;
       final matchesSearch = query.isEmpty ||
@@ -67,9 +75,36 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
     return 4;
   }
 
+  void _handleUpdateDoc(DocumentItem updated) {
+    setState(() {
+      final index = _docs.indexWhere((d) => d.id == updated.id);
+      if (index != -1) {
+        _docs[index] = updated;
+      }
+    });
+  }
+
+  void _handleDeleteDoc(int id) {
+    setState(() {
+      _docs.removeWhere((d) => d.id == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDarkMode;
+
+    // If in Admin Mode, show AdminScreen
+    if (_isAdminMode) {
+      return AdminScreen(
+        docs: _docs,
+        onUpdate: _handleUpdateDoc,
+        onDelete: _handleDeleteDoc,
+        onLogout: () => setState(() => _isAdminMode = false),
+        isDarkMode: isDark,
+      );
+    }
+
     final filtered = _filteredDocuments;
     final size = MediaQuery.of(context).size;
     final crossAxisCount = _calculateCrossAxisCount(size.width);
@@ -240,12 +275,18 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                     _isPanelOpen = false;
                   });
                 },
-                isLoggedIn: _isLoggedIn,
+                isLoggedIn: _isAdminMode,
                 onLogin: () {
-                  setState(() => _isLoggedIn = true);
+                  setState(() {
+                    _isAdminMode = true;
+                    _isPanelOpen = false;
+                  });
                 },
                 onLogout: () {
-                  setState(() => _isLoggedIn = false);
+                  setState(() {
+                    _isAdminMode = false;
+                    _isPanelOpen = false;
+                  });
                 },
                 onClose: () => setState(() => _isPanelOpen = false),
               ),
