@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
+import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/admin_card.dart';
 import '../widgets/document_list_tile.dart';
@@ -17,6 +18,9 @@ class AdminScreen extends StatefulWidget {
   final ValueChanged<bool> onToggleDarkMode;
   final CompanyItem? company;
   final VoidCallback? onBackToCompanies;
+  final UserItem? currentUser;
+  final List<UserItem>? users;
+  final VoidCallback? onOpenUserManagement;
 
   const AdminScreen({
     super.key,
@@ -28,6 +32,9 @@ class AdminScreen extends StatefulWidget {
     required this.onToggleDarkMode,
     this.company,
     this.onBackToCompanies,
+    this.currentUser,
+    this.users,
+    this.onOpenUserManagement,
   });
 
   @override
@@ -535,6 +542,12 @@ class _AdminScreenState extends State<AdminScreen> {
                 onClose: () => setState(() => _isPanelOpen = false),
                 company: widget.company,
                 onBackToCompanies: widget.onBackToCompanies,
+                currentUser: widget.currentUser,
+                users: widget.users,
+                onOpenUserManagement: () {
+                  setState(() => _isPanelOpen = false);
+                  widget.onOpenUserManagement?.call();
+                },
               ),
             ),
           ],

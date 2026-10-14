@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:docvault/main.dart';
 import 'package:docvault/widgets/document_list_tile.dart';
+import 'package:docvault/widgets/options_panel.dart';
 
 // 1x1 transparent PNG bytes
 final Uint8List kTransparentImage = Uint8List.fromList(<int>[
@@ -325,5 +326,183 @@ void main() {
 
     expect(find.text('Editar'), findsNothing);
     expect(find.text('Excluir'), findsNothing);
+  });
+
+  testWidgets('Discreet Super Admin button opens modal, logs in to DocVaultAdminScreen and accesses User Management globally', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Discreet shield icon should be present on selection screen
+    final shieldButton = find.byIcon(Icons.shield_outlined);
+    expect(shieldButton, findsOneWidget);
+
+    // Tap discreet button to open Super Admin login modal
+    await tester.tap(shieldButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify modal appeared
+    expect(find.text('Acesso DocVault Admin'), findsOneWidget);
+    expect(find.text('Entrar no Admin'), findsOneWidget);
+
+    // Login with Super Admin credentials
+    await tester.tap(find.text('Entrar no Admin'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // We are now on DocVaultAdminScreen
+    expect(find.text('ADMIN GERAL DOCVAULT'), findsOneWidget);
+    expect(find.text('Gestão de Empresas'), findsOneWidget);
+    expect(find.text('AlphaTech Soluções Digitais'), findsOneWidget);
+    expect(find.text('LogiPrime Logística & Operações'), findsOneWidget);
+
+    // Open User Management Screen from DocVaultAdminScreen
+    final userMgmtButton = find.text('Gerenciar Usuários');
+    expect(userMgmtButton, findsOneWidget);
+    await tester.tap(userMgmtButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify User Management Screen is in GLOBAL ACCESS mode
+    expect(find.text('ACESSO GLOBAL'), findsOneWidget);
+    expect(find.text('Super Admin DocVault'), findsWidgets);
+    expect(find.text('Super Gerente AlphaTech'), findsOneWidget);
+    expect(find.text('Super Gerente LogiPrime'), findsOneWidget);
+
+    // Tap back button to return to DocVaultAdminScreen
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('ADMIN GERAL DOCVAULT'), findsOneWidget);
+
+    // Logout from DocVaultAdminScreen
+    await tester.tap(find.byIcon(Icons.logout_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Back to CompanySelectionScreen
+    expect(find.text('Qual empresa você deseja consultar?'), findsOneWidget);
+  });
+
+  testWidgets('Super Gerente logs into company, sees Gerenciar Usuarios in OptionsPanel and manages company users', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Select AlphaTech
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Open Opções menu
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Enter Super Gerente credentials in OptionsPanel fields
+    final panelTextFields = find.descendant(
+      of: find.byType(OptionsPanel),
+      matching: find.byType(TextField),
+    );
+    final emailField = panelTextFields.at(0);
+    final passField = panelTextFields.at(1);
+    await tester.enterText(emailField, 'super@alphatech.com');
+    await tester.enterText(passField, 'alpha123');
+    await tester.pump();
+
+    // Login
+    await tester.tap(find.text('Entrar no Painel Admin'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // We are in AdminScreen
+    expect(find.text('ADMIN'), findsOneWidget);
+
+    // Open Opções from Admin header
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify Super Gerente role is shown and "Gerenciar Usuários" button is visible
+    expect(find.text('Super Gerente'), findsOneWidget);
+    expect(find.text('Gerenciar Usuários'), findsOneWidget);
+
+    // Tap "Gerenciar Usuários"
+    await tester.tap(find.text('Gerenciar Usuários'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify UserManagementScreen is scoped to ALPHATECH SOLUÇÕES DIGITAIS
+    expect(find.text('ALPHATECH SOLUÇÕES DIGITAIS'), findsOneWidget);
+    expect(find.text('Super Gerente AlphaTech'), findsOneWidget);
+    expect(find.text('Admin AlphaTech'), findsOneWidget);
+
+    // LogiPrime users must NOT be visible
+    expect(find.text('Super Gerente LogiPrime'), findsNothing);
+    expect(find.text('Admin LogiPrime'), findsNothing);
+
+    // Back to AdminScreen
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('ADMIN'), findsOneWidget);
+  });
+
+  testWidgets('Normal Gerente logs in and does NOT see Gerenciar Usuarios option in OptionsPanel', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Select AlphaTech
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Open Opções menu
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Login with normal Gerente credentials
+    final panelTextFields = find.descendant(
+      of: find.byType(OptionsPanel),
+      matching: find.byType(TextField),
+    );
+    final emailField = panelTextFields.at(0);
+    final passField = panelTextFields.at(1);
+    await tester.enterText(emailField, 'admin@alphatech.com');
+    await tester.enterText(passField, 'alpha123');
+    await tester.pump();
+
+    await tester.tap(find.text('Entrar no Painel Admin'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Now in AdminScreen
+    expect(find.text('ADMIN'), findsOneWidget);
+
+    // Open Opções in AdminScreen
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify normal Gerente sees "Administrador", but does NOT see "Gerenciar Usuários"
+    expect(find.text('Administrador'), findsOneWidget);
+    expect(find.text('Gerenciar Usuários'), findsNothing);
   });
 }

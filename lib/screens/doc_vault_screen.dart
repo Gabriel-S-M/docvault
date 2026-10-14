@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
+import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/category_bar.dart';
@@ -9,12 +10,18 @@ import '../widgets/document_list_tile.dart';
 import '../widgets/options_panel.dart';
 import '../widgets/pdf_modal.dart';
 import 'admin_screen.dart';
+import 'user_management_screen.dart';
 
 class DocVaultScreen extends StatefulWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onToggleDarkMode;
   final CompanyItem? company;
   final VoidCallback? onBackToCompanies;
+  final List<UserItem>? users;
+  final ValueChanged<UserItem>? onAddUser;
+  final ValueChanged<UserItem>? onUpdateUser;
+  final ValueChanged<String>? onDeleteUser;
+  final List<CompanyItem>? companies;
 
   const DocVaultScreen({
     super.key,
@@ -22,6 +29,11 @@ class DocVaultScreen extends StatefulWidget {
     required this.onToggleDarkMode,
     this.company,
     this.onBackToCompanies,
+    this.users,
+    this.onAddUser,
+    this.onUpdateUser,
+    this.onDeleteUser,
+    this.companies,
   });
 
   @override
@@ -36,6 +48,8 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
   ViewMode _viewMode = ViewMode.grid;
   bool _isPanelOpen = false;
   bool _isAdminMode = false;
+  UserItem? _currentUser;
+  bool _isUserManagementOpen = false;
   DocumentItem? _openDoc;
 
   @override
@@ -99,17 +113,40 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
   Widget build(BuildContext context) {
     final isDark = widget.isDarkMode;
 
+    // If in User Management Mode:
+    if (_isUserManagementOpen && _currentUser != null) {
+      return UserManagementScreen(
+        currentUser: _currentUser!,
+        currentCompany: widget.company,
+        users: widget.users ?? kMockUsers,
+        companies: widget.companies ??
+            (widget.company != null ? [widget.company!] : kMockCompanies),
+        onAddUser: (u) => widget.onAddUser?.call(u),
+        onUpdateUser: (u) => widget.onUpdateUser?.call(u),
+        onDeleteUser: (id) => widget.onDeleteUser?.call(id),
+        onBack: () => setState(() => _isUserManagementOpen = false),
+        isDarkMode: isDark,
+        onToggleDarkMode: widget.onToggleDarkMode,
+      );
+    }
+
     // If in Admin Mode, show AdminScreen
     if (_isAdminMode) {
       return AdminScreen(
         docs: _docs,
         onUpdate: _handleUpdateDoc,
         onDelete: _handleDeleteDoc,
-        onLogout: () => setState(() => _isAdminMode = false),
+        onLogout: () => setState(() {
+          _isAdminMode = false;
+          _currentUser = null;
+        }),
         isDarkMode: isDark,
         onToggleDarkMode: widget.onToggleDarkMode,
         company: widget.company,
         onBackToCompanies: widget.onBackToCompanies,
+        currentUser: _currentUser,
+        users: widget.users,
+        onOpenUserManagement: () => setState(() => _isUserManagementOpen = true),
       );
     }
 
@@ -286,6 +323,13 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                   });
                 },
                 isLoggedIn: _isAdminMode,
+                users: widget.users,
+                currentUser: _currentUser,
+                onLoginUser: (user) {
+                  setState(() {
+                    _currentUser = user;
+                  });
+                },
                 onLogin: () {
                   setState(() {
                     _isAdminMode = true;
@@ -295,12 +339,19 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                 onLogout: () {
                   setState(() {
                     _isAdminMode = false;
+                    _currentUser = null;
                     _isPanelOpen = false;
                   });
                 },
                 onClose: () => setState(() => _isPanelOpen = false),
                 company: widget.company,
                 onBackToCompanies: widget.onBackToCompanies,
+                onOpenUserManagement: () {
+                  setState(() {
+                    _isPanelOpen = false;
+                    _isUserManagementOpen = true;
+                  });
+                },
               ),
             ),
           ],

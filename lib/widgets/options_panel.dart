@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
+import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 
 class OptionsPanel extends StatefulWidget {
@@ -17,6 +18,10 @@ class OptionsPanel extends StatefulWidget {
   final VoidCallback onClose;
   final CompanyItem? company;
   final VoidCallback? onBackToCompanies;
+  final List<UserItem>? users;
+  final UserItem? currentUser;
+  final ValueChanged<UserItem>? onLoginUser;
+  final VoidCallback? onOpenUserManagement;
 
   const OptionsPanel({
     super.key,
@@ -32,6 +37,10 @@ class OptionsPanel extends StatefulWidget {
     required this.onClose,
     this.company,
     this.onBackToCompanies,
+    this.users,
+    this.currentUser,
+    this.onLoginUser,
+    this.onOpenUserManagement,
   });
 
   @override
@@ -64,6 +73,29 @@ class _OptionsPanelState extends State<OptionsPanel> {
   void _handleLogin() {
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
+    final userList = widget.users ?? kMockUsers;
+
+    // Check userList for credentials
+    final matches = userList.where(
+      (u) => u.email.toLowerCase() == email.toLowerCase() && u.password == pass,
+    ).toList();
+
+    if (matches.isNotEmpty) {
+      final user = matches.first;
+      if (user.isSuperAdmin || widget.company == null || user.companyId == widget.company?.id) {
+        setState(() => _errorMessage = null);
+        widget.onLoginUser?.call(user);
+        widget.onLogin();
+        widget.onClose();
+        return;
+      } else {
+        setState(() {
+          _errorMessage = 'Este usuário não possui permissão nesta empresa.';
+        });
+        return;
+      }
+    }
+
     final expectedEmail = widget.company?.adminEmail ?? 'teste@teste.com';
     final expectedPass = widget.company?.adminPassword ?? '12345';
 
@@ -71,6 +103,15 @@ class _OptionsPanelState extends State<OptionsPanel> {
         (email == 'teste@teste.com' && pass == '12345') ||
         (email.isNotEmpty && pass.isNotEmpty)) {
       setState(() => _errorMessage = null);
+      final fallbackUser = UserItem(
+        id: 'user-${widget.company?.id ?? "default"}-gerente',
+        name: widget.company?.adminName ?? 'Administrador',
+        email: email,
+        password: pass,
+        role: UserRole.gerente,
+        companyId: widget.company?.id,
+      );
+      widget.onLoginUser?.call(fallbackUser);
       widget.onLogin();
       widget.onClose();
     } else {
@@ -157,9 +198,12 @@ class _OptionsPanelState extends State<OptionsPanel> {
                             ),
                             child: Center(
                               child: Text(
-                                widget.company?.adminName.isNotEmpty == true
-                                    ? widget.company!.adminName[0].toUpperCase()
-                                    : 'A',
+                                (widget.currentUser?.name.isNotEmpty == true
+                                        ? widget.currentUser!.name[0]
+                                        : (widget.company?.adminName.isNotEmpty == true
+                                            ? widget.company!.adminName[0]
+                                            : 'A'))
+                                    .toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -168,33 +212,65 @@ class _OptionsPanelState extends State<OptionsPanel> {
                               ),
                             ),
                           ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.company?.adminName ?? 'Teste',
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.stone100 : AppColors.stone900,
-                                    ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.currentUser?.name ?? widget.company?.adminName ?? 'Teste',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
                                   ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Administrador',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: isDark ? AppColors.indigo400 : AppColors.indigo600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  widget.currentUser?.isSuperGerente == true
+                                      ? 'Super Gerente'
+                                      : (widget.currentUser?.isSuperAdmin == true
+                                          ? 'Super Admin'
+                                          : 'Administrador'),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? AppColors.indigo400 : AppColors.indigo600,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      if (widget.currentUser?.isSuperGerente == true ||
+                          widget.currentUser?.isSuperAdmin == true) ...[
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 34,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              widget.onClose();
+                              widget.onOpenUserManagement?.call();
+                            },
+                            icon: const Icon(Icons.people_outline_rounded, size: 15),
+                            label: const Text(
+                              'Gerenciar Usuários',
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.indigo700,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
                         ),
+                      ],
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,

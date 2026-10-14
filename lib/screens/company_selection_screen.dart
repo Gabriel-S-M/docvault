@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/company_item.dart';
+import '../models/user_item.dart';
 import '../theme/app_theme.dart';
+import '../widgets/doc_vault_login_modal.dart';
 
 class CompanySelectionScreen extends StatefulWidget {
   final List<CompanyItem> companies;
   final ValueChanged<CompanyItem> onSelectCompany;
+  final List<UserItem>? users;
+  final ValueChanged<UserItem>? onSuperAdminLogin;
   final bool isDarkMode;
   final ValueChanged<bool> onToggleDarkMode;
 
@@ -13,6 +17,8 @@ class CompanySelectionScreen extends StatefulWidget {
     super.key,
     required this.companies,
     required this.onSelectCompany,
+    this.users,
+    this.onSuperAdminLogin,
     required this.isDarkMode,
     required this.onToggleDarkMode,
   });
@@ -23,6 +29,7 @@ class CompanySelectionScreen extends StatefulWidget {
 
 class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
   String _searchQuery = '';
+  bool _isSuperAdminLoginOpen = false;
 
   List<CompanyItem> get _filteredCompanies {
     final query = _searchQuery.toLowerCase().trim();
@@ -41,114 +48,144 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.stone950 : AppColors.stone50,
-      body: Column(
+      body: Stack(
         children: [
-          // Top Navigation Header
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.stone900 : Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? AppColors.stone700 : AppColors.stone200,
-                  width: 1,
-                ),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // DocVault Brand
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: AppColors.indigo600,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.description_outlined,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'DocVault',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                            color: isDark ? AppColors.stone100 : AppColors.stone900,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.indigo950
-                                : AppColors.indigo500.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'PORTAL PÚBLICO',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? AppColors.indigo400 : AppColors.indigo700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                      ],
+          Column(
+            children: [
+              // Top Navigation Header
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.stone900 : Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? AppColors.stone700 : AppColors.stone200,
+                      width: 1,
                     ),
-
-                    // Theme Toggle Button
-                    InkWell(
-                      onTap: () => widget.onToggleDarkMode(!isDark),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.stone800 : AppColors.stone100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isDark ? AppColors.stone700 : AppColors.stone200,
-                          ),
-                        ),
-                        child: Row(
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // DocVault Brand
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                              size: 16,
-                              color: isDark ? AppColors.stone300 : AppColors.stone700,
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.indigo600,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.description_outlined,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 12),
                             Text(
-                              isDark ? 'Tema Claro' : 'Tema Escuro',
+                              'DocVault',
                               style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
-                                color: isDark ? AppColors.stone300 : AppColors.stone700,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                                color: isDark ? AppColors.stone100 : AppColors.stone900,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.indigo950
+                                    : AppColors.indigo500.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'PORTAL PÚBLICO',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? AppColors.indigo400 : AppColors.indigo700,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
+
+                        // Right actions: Theme Toggle + Discreet Super Admin Login Trigger
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Theme Toggle Button
+                            InkWell(
+                              onTap: () => widget.onToggleDarkMode(!isDark),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.stone800 : AppColors.stone100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.stone700 : AppColors.stone200,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                                      size: 16,
+                                      color: isDark ? AppColors.stone300 : AppColors.stone700,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isDark ? 'Tema Claro' : 'Tema Escuro',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? AppColors.stone300 : AppColors.stone700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Discreet Super Admin Login trigger
+                            const SizedBox(width: 8),
+                            Tooltip(
+                              message: 'Administração DocVault',
+                              child: InkWell(
+                                onTap: () => setState(() => _isSuperAdminLoginOpen = true),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.shield_outlined,
+                                    size: 16,
+                                    color: isDark ? AppColors.stone600 : AppColors.stone400,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
 
           // Main Body
           Expanded(
@@ -371,7 +408,31 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
           ),
         ],
       ),
-    );
+      if (_isSuperAdminLoginOpen) ...[
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _isSuperAdminLoginOpen = false),
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+        Center(
+          child: DocVaultLoginModal(
+            users: widget.users ?? kMockUsers,
+            onLoginSuccess: (user) {
+              setState(() => _isSuperAdminLoginOpen = false);
+              widget.onSuperAdminLogin?.call(user);
+            },
+            onClose: () => setState(() => _isSuperAdminLoginOpen = false),
+            isDarkMode: isDark,
+          ),
+        ),
+      ],
+    ],
+  ),
+);
   }
 }
 
