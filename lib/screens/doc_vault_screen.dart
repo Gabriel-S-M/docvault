@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/company_item.dart';
 import '../models/document_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
@@ -12,11 +13,15 @@ import 'admin_screen.dart';
 class DocVaultScreen extends StatefulWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onToggleDarkMode;
+  final CompanyItem? company;
+  final VoidCallback? onBackToCompanies;
 
   const DocVaultScreen({
     super.key,
     required this.isDarkMode,
     required this.onToggleDarkMode,
+    this.company,
+    this.onBackToCompanies,
   });
 
   @override
@@ -36,7 +41,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
   @override
   void initState() {
     super.initState();
-    _docs = List.from(kMockDocuments);
+    _docs = List.from(widget.company?.documents ?? kMockDocuments);
   }
 
   List<DocumentItem> get _filteredDocuments {
@@ -103,6 +108,8 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
         onLogout: () => setState(() => _isAdminMode = false),
         isDarkMode: isDark,
         onToggleDarkMode: widget.onToggleDarkMode,
+        company: widget.company,
+        onBackToCompanies: widget.onBackToCompanies,
       );
     }
 
@@ -125,6 +132,8 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                 isPanelOpen: _isPanelOpen,
                 onTogglePanel: () => setState(() => _isPanelOpen = !_isPanelOpen),
                 isDarkMode: isDark,
+                company: widget.company,
+                onBackToCompanies: widget.onBackToCompanies,
               ),
 
               // Sticky Category Bar
@@ -290,6 +299,8 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                   });
                 },
                 onClose: () => setState(() => _isPanelOpen = false),
+                company: widget.company,
+                onBackToCompanies: widget.onBackToCompanies,
               ),
             ),
           ],

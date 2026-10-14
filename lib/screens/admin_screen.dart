@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/company_item.dart';
 import '../models/document_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/admin_card.dart';
@@ -14,6 +15,8 @@ class AdminScreen extends StatefulWidget {
   final VoidCallback onLogout;
   final bool isDarkMode;
   final ValueChanged<bool> onToggleDarkMode;
+  final CompanyItem? company;
+  final VoidCallback? onBackToCompanies;
 
   const AdminScreen({
     super.key,
@@ -23,6 +26,8 @@ class AdminScreen extends StatefulWidget {
     required this.onLogout,
     required this.isDarkMode,
     required this.onToggleDarkMode,
+    this.company,
+    this.onBackToCompanies,
   });
 
   @override
@@ -180,6 +185,38 @@ class _AdminScreenState extends State<AdminScreen> {
                                 ),
                               ),
                             ),
+                            if (widget.company != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.stone800 : AppColors.stone100,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.stone700 : AppColors.stone300,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      widget.company!.icon,
+                                      size: 12,
+                                      color: widget.company!.accentColor,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      widget.company!.name,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? AppColors.stone300 : AppColors.stone700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
 
@@ -496,6 +533,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   widget.onLogout();
                 },
                 onClose: () => setState(() => _isPanelOpen = false),
+                company: widget.company,
+                onBackToCompanies: widget.onBackToCompanies,
               ),
             ),
           ],

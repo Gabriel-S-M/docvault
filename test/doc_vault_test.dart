@@ -91,7 +91,7 @@ void main() {
     await initializeDateFormatting('pt_BR', null);
   });
 
-  testWidgets('DocVault renders header, category pills and document cards', (WidgetTester tester) async {
+  testWidgets('Initial screen renders CompanySelectionScreen with both companies', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -100,29 +100,56 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Title and Logo
+    // Verify Title and Selection Screen elements
     expect(find.text('DocVault'), findsOneWidget);
-    expect(find.text('8 docs'), findsOneWidget);
+    expect(find.text('PORTAL PÚBLICO'), findsOneWidget);
+    expect(find.text('Qual empresa você deseja consultar?'), findsOneWidget);
 
-    // Verify Search hint
-    expect(find.text('Buscar documentos, autores…'), findsOneWidget);
-
-    // Verify Categories
-    expect(find.text('Todos'), findsOneWidget);
-    expect(find.text('Relatórios'), findsWidgets);
-    expect(find.text('Manuais'), findsWidgets);
-
-    // Verify Document Titles
-    expect(find.text('Relatório Anual 2024'), findsOneWidget);
-    expect(find.text('Manual de Procedimentos Internos'), findsOneWidget);
+    // Verify both companies are listed
+    expect(find.text('AlphaTech Soluções Digitais'), findsOneWidget);
+    expect(find.text('LogiPrime Logística & Operações'), findsOneWidget);
+    expect(find.text('4 documentos'), findsNWidgets(2));
   });
 
-  testWidgets('Filtering by search query updates documents list', (WidgetTester tester) async {
+  testWidgets('Selecting a company opens DocVault with that company public documents without login', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
     await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Tap on AlphaTech Soluções Digitais
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify that we are on DocVaultScreen showing AlphaTech docs
+    expect(find.text('4 docs'), findsOneWidget);
+    expect(find.text('AlphaTech Soluções Digitais'), findsOneWidget);
+
+    // AlphaTech documents should be visible
+    expect(find.text('Relatório Anual 2024'), findsOneWidget);
+    expect(find.text('Proposta Comercial — Q1 2025'), findsOneWidget);
+    expect(find.text('Política de Privacidade v3.1'), findsOneWidget);
+    expect(find.text('Plano de Marketing Digital 2025'), findsOneWidget);
+
+    // LogiPrime documents should NOT be visible here
+    expect(find.text('Manual de Procedimentos Internos'), findsNothing);
+  });
+
+  testWidgets('Filtering by search query updates documents list in active company', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Select AlphaTech
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -136,7 +163,7 @@ void main() {
     expect(find.text('Relatório Anual 2024'), findsNothing);
   });
 
-  testWidgets('Admin login, Edit Modal, and Admin OptionsPanel with logout', (WidgetTester tester) async {
+  testWidgets('Trocar Empresa inside OptionsPanel returns to selection screen and allows entering LogiPrime', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -145,12 +172,61 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
+    // Select AlphaTech
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Relatório Anual 2024'), findsOneWidget);
+
+    // Open Opções menu
+    await tester.tap(find.text('Opções'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Tap "Trocar Empresa"
+    await tester.tap(find.text('Trocar Empresa'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Back to Selection Screen
+    expect(find.text('Qual empresa você deseja consultar?'), findsOneWidget);
+
+    // Now select LogiPrime
+    await tester.tap(find.text('LogiPrime Logística & Operações'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify LogiPrime documents are loaded
+    expect(find.text('Manual de Procedimentos Internos'), findsOneWidget);
+    expect(find.text('Contrato de Prestação de Serviços'), findsOneWidget);
+    expect(find.text('Ata da Reunião — Fevereiro 2025'), findsOneWidget);
+    expect(find.text('Manual de Identidade Visual'), findsOneWidget);
+
+    // AlphaTech docs should NOT be present
+    expect(find.text('Relatório Anual 2024'), findsNothing);
+  });
+
+  testWidgets('Admin login for active company, Edit Modal, and Admin OptionsPanel with logout', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Select AlphaTech
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
     // Tap Opções on Home
     await tester.tap(find.text('Opções'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Submit admin login
+    // Submit admin login (prefilled with company admin credentials)
     expect(find.text('Entrar no Painel Admin'), findsOneWidget);
     await tester.tap(find.text('Entrar no Painel Admin'));
     await tester.pump();
@@ -186,8 +262,8 @@ void main() {
     await tester.tap(find.text('Opções'));
     await tester.pumpAndSettle();
 
-    // Verify user info is displayed in OptionsPanel
-    expect(find.text('Teste'), findsOneWidget);
+    // Verify admin info is displayed in OptionsPanel
+    expect(find.text('Admin AlphaTech'), findsOneWidget);
     expect(find.text('Administrador'), findsOneWidget);
     expect(find.text('Sair da conta'), findsOneWidget);
 
@@ -196,7 +272,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Back to user home view
+    // Back to user home view of that company
     expect(find.text('Todos os documentos'), findsOneWidget);
   });
 
@@ -206,6 +282,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     await tester.pumpWidget(const MainApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Select AlphaTech
+    await tester.tap(find.text('AlphaTech Soluções Digitais'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
