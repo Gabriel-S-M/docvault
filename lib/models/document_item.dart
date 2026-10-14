@@ -41,6 +41,30 @@ class DocumentItem {
     required this.url,
   });
 
+  DocumentItem copyWith({
+    int? id,
+    String? title,
+    String? category,
+    DateTime? date,
+    int? pages,
+    String? size,
+    String? author,
+    String? thumbnail,
+    String? url,
+  }) {
+    return DocumentItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      date: date ?? this.date,
+      pages: pages ?? this.pages,
+      size: size ?? this.size,
+      author: author ?? this.author,
+      thumbnail: thumbnail ?? this.thumbnail,
+      url: url ?? this.url,
+    );
+  }
+
   double get sizeInMb {
     final cleaned = size.replaceAll(RegExp(r'[^0-9.]'), '');
     return double.tryParse(cleaned) ?? 0.0;
@@ -53,16 +77,24 @@ class DocumentItem {
   String get formattedShortDate {
     return DateFormat("dd/MM/yyyy").format(date);
   }
+
+  String get isoDateString {
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
 }
 
-const List<String> kDocumentCategories = [
-  'Todos',
+const List<String> kDocumentCategoryOptions = [
   'Relatórios',
   'Manuais',
   'Propostas',
   'Contratos',
   'Atas',
   'Políticas',
+];
+
+const List<String> kDocumentCategories = [
+  'Todos',
+  ...kDocumentCategoryOptions,
 ];
 
 final List<DocumentItem> kMockDocuments = [

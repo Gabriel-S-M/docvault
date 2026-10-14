@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/company_item.dart';
 import '../models/document_item.dart';
+import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 
 class OptionsPanel extends StatefulWidget {
@@ -14,6 +16,12 @@ class OptionsPanel extends StatefulWidget {
   final VoidCallback onLogin;
   final VoidCallback onLogout;
   final VoidCallback onClose;
+  final CompanyItem? company;
+  final VoidCallback? onBackToCompanies;
+  final List<UserItem>? users;
+  final UserItem? currentUser;
+  final ValueChanged<UserItem>? onLoginUser;
+  final VoidCallback? onOpenUserManagement;
 
   const OptionsPanel({
     super.key,
@@ -27,6 +35,12 @@ class OptionsPanel extends StatefulWidget {
     required this.onLogin,
     required this.onLogout,
     required this.onClose,
+    this.company,
+    this.onBackToCompanies,
+    this.users,
+    this.currentUser,
+    this.onLoginUser,
+    this.onOpenUserManagement,
   });
 
   @override
@@ -34,8 +48,20 @@ class OptionsPanel extends StatefulWidget {
 }
 
 class _OptionsPanelState extends State<OptionsPanel> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(
+      text: widget.company?.adminEmail ?? 'teste@teste.com',
+    );
+    _passwordController = TextEditingController(
+      text: widget.company?.adminPassword ?? '12345',
+    );
+  }
 
   @override
   void dispose() {
@@ -45,8 +71,53 @@ class _OptionsPanelState extends State<OptionsPanel> {
   }
 
   void _handleLogin() {
-    if (_emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+    final email = _emailController.text.trim();
+    final pass = _passwordController.text.trim();
+    final userList = widget.users ?? kMockUsers;
+
+    // Check userList for credentials
+    final matches = userList.where(
+      (u) => u.email.toLowerCase() == email.toLowerCase() && u.password == pass,
+    ).toList();
+
+    if (matches.isNotEmpty) {
+      final user = matches.first;
+      if (user.isSuperAdmin || widget.company == null || user.companyId == widget.company?.id) {
+        setState(() => _errorMessage = null);
+        widget.onLoginUser?.call(user);
+        widget.onLogin();
+        widget.onClose();
+        return;
+      } else {
+        setState(() {
+          _errorMessage = 'Este usuário não possui permissão nesta empresa.';
+        });
+        return;
+      }
+    }
+
+    final expectedEmail = widget.company?.adminEmail ?? 'teste@teste.com';
+    final expectedPass = widget.company?.adminPassword ?? '12345';
+
+    if ((email == expectedEmail && pass == expectedPass) ||
+        (email == 'teste@teste.com' && pass == '12345') ||
+        (email.isNotEmpty && pass.isNotEmpty)) {
+      setState(() => _errorMessage = null);
+      final fallbackUser = UserItem(
+        id: 'user-${widget.company?.id ?? "default"}-gerente',
+        name: widget.company?.adminName ?? 'Administrador',
+        email: email,
+        password: pass,
+        role: UserRole.gerente,
+        companyId: widget.company?.id,
+      );
+      widget.onLoginUser?.call(fallbackUser);
       widget.onLogin();
+      widget.onClose();
+    } else {
+      setState(() {
+        _errorMessage = 'Preencha e-mail e senha ($expectedEmail / $expectedPass)';
+      });
     }
   }
 
@@ -75,139 +146,235 @@ class _OptionsPanelState extends State<OptionsPanel> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Section 1: CONTA
+          // Section 1: CONTA / LOGIN ADMIN
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'CONTA',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: AppColors.stone400,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (widget.isLoggedIn)
-                  Row(
-                    children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'CONTA',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                        color: AppColors.stone400,
+                      ),
+                    ),
+                    if (!widget.isLoggedIn)
                       Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: AppColors.indigo700,
-                          shape: BoxShape.circle,
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.indigo500.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Center(
-                          child: Text(
-                            'A',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
+                        child: Text(
+                          'Admin',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.indigo600,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ana Costa',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? AppColors.stone100 : AppColors.stone900,
-                              ),
-                            ),
-                            Text(
-                              'ana@empresa.com.br',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.stone400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: widget.onLogout,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'Sair',
-                          style: TextStyle(fontSize: 12, color: Colors.redAccent),
-                        ),
-                      ),
-                    ],
-                  )
-                else
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (widget.isLoggedIn)
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        height: 36,
-                        child: TextField(
-                          controller: _emailController,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? AppColors.stone100 : AppColors.stone900,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'E-mail',
-                            filled: true,
-                            fillColor: isDark ? AppColors.stone800 : Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                            isDense: true,
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: isDark ? AppColors.stone600 : AppColors.stone200,
+                      Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: const BoxDecoration(
+                              color: AppColors.indigo700,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                (widget.currentUser?.name.isNotEmpty == true
+                                        ? widget.currentUser!.name[0]
+                                        : (widget.company?.adminName.isNotEmpty == true
+                                            ? widget.company!.adminName[0]
+                                            : 'A'))
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: AppColors.indigo600),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.currentUser?.name ?? widget.company?.adminName ?? 'Teste',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  widget.currentUser?.isSuperGerente == true
+                                      ? 'Super Gerente'
+                                      : (widget.currentUser?.isSuperAdmin == true
+                                          ? 'Super Admin'
+                                          : 'Administrador'),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? AppColors.indigo400 : AppColors.indigo600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (widget.currentUser?.isSuperGerente == true ||
+                          widget.currentUser?.isSuperAdmin == true) ...[
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 34,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              widget.onClose();
+                              widget.onOpenUserManagement?.call();
+                            },
+                            icon: const Icon(Icons.people_outline_rounded, size: 15),
+                            label: const Text(
+                              'Gerenciar Usuários',
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.indigo700,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 36,
-                        child: TextField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? AppColors.stone100 : AppColors.stone900,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Senha',
-                            filled: true,
-                            fillColor: isDark ? AppColors.stone800 : Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                            isDense: true,
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: isDark ? AppColors.stone600 : AppColors.stone200,
+                      ],
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 34,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              widget.onLogout();
+                              widget.onClose();
+                            },
+                            icon: const Icon(
+                              Icons.logout_rounded,
+                              size: 14,
+                              color: Colors.redAccent,
+                            ),
+                            label: const Text(
+                              'Sair da conta',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.redAccent,
                               ),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: AppColors.indigo600),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: isDark ? AppColors.stone700 : AppColors.stone200,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.zero,
                             ),
                           ),
                         ),
-                      ),
+                      ],
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 36,
+                          child: TextField(
+                            controller: _emailController,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? AppColors.stone100 : AppColors.stone900,
+                            ),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'E-mail (${widget.company?.adminEmail ?? "teste@teste.com"})',
+                              filled: true,
+                              fillColor: isDark ? AppColors.stone800 : Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                              isDense: true,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.stone600 : AppColors.stone200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.indigo600),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: TextField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? AppColors.stone100 : AppColors.stone900,
+                            ),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Senha (${widget.company?.adminPassword ?? "12345"})',
+                              filled: true,
+                              fillColor: isDark ? AppColors.stone800 : Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                              isDense: true,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.stone600 : AppColors.stone200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.indigo600),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _errorMessage!,
+                          style: const TextStyle(fontSize: 10.5, color: Colors.redAccent),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
@@ -224,13 +391,48 @@ class _OptionsPanelState extends State<OptionsPanel> {
                             padding: EdgeInsets.zero,
                           ),
                           child: const Text(
-                            'Entrar',
+                            'Entrar no Painel Admin',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
                     ],
                   ),
+                if (widget.onBackToCompanies != null) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 34,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        widget.onClose();
+                        widget.onBackToCompanies!();
+                      },
+                      icon: Icon(
+                        Icons.swap_horiz_rounded,
+                        size: 15,
+                        color: isDark ? AppColors.stone300 : AppColors.stone700,
+                      ),
+                      label: Text(
+                        'Trocar Empresa',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.stone200 : AppColors.stone800,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: isDark ? AppColors.stone700 : AppColors.stone200,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../models/company_item.dart';
 import '../models/document_item.dart';
+import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/category_bar.dart';
@@ -7,15 +9,31 @@ import '../widgets/document_card.dart';
 import '../widgets/document_list_tile.dart';
 import '../widgets/options_panel.dart';
 import '../widgets/pdf_modal.dart';
+import 'admin_screen.dart';
+import 'user_management_screen.dart';
 
 class DocVaultScreen extends StatefulWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onToggleDarkMode;
+  final CompanyItem? company;
+  final VoidCallback? onBackToCompanies;
+  final List<UserItem>? users;
+  final ValueChanged<UserItem>? onAddUser;
+  final ValueChanged<UserItem>? onUpdateUser;
+  final ValueChanged<String>? onDeleteUser;
+  final List<CompanyItem>? companies;
 
   const DocVaultScreen({
     super.key,
     required this.isDarkMode,
     required this.onToggleDarkMode,
+    this.company,
+    this.onBackToCompanies,
+    this.users,
+    this.onAddUser,
+    this.onUpdateUser,
+    this.onDeleteUser,
+    this.companies,
   });
 
   @override
@@ -23,18 +41,27 @@ class DocVaultScreen extends StatefulWidget {
 }
 
 class _DocVaultScreenState extends State<DocVaultScreen> {
+  late List<DocumentItem> _docs;
   String _activeCategory = 'Todos';
   String _searchQuery = '';
   SortKey _sortKey = SortKey.date;
   ViewMode _viewMode = ViewMode.grid;
   bool _isPanelOpen = false;
-  bool _isLoggedIn = false;
+  bool _isAdminMode = false;
+  UserItem? _currentUser;
+  bool _isUserManagementOpen = false;
   DocumentItem? _openDoc;
+
+  @override
+  void initState() {
+    super.initState();
+    _docs = List.from(widget.company?.documents ?? kMockDocuments);
+  }
 
   List<DocumentItem> get _filteredDocuments {
     final query = _searchQuery.toLowerCase().trim();
 
-    final list = kMockDocuments.where((doc) {
+    final list = _docs.where((doc) {
       final matchesCategory =
           _activeCategory == 'Todos' || doc.category == _activeCategory;
       final matchesSearch = query.isEmpty ||
@@ -67,9 +94,62 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
     return 4;
   }
 
+  void _handleUpdateDoc(DocumentItem updated) {
+    setState(() {
+      final index = _docs.indexWhere((d) => d.id == updated.id);
+      if (index != -1) {
+        _docs[index] = updated;
+      }
+    });
+  }
+
+  void _handleDeleteDoc(int id) {
+    setState(() {
+      _docs.removeWhere((d) => d.id == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDarkMode;
+
+    // If in User Management Mode:
+    if (_isUserManagementOpen && _currentUser != null) {
+      return UserManagementScreen(
+        currentUser: _currentUser!,
+        currentCompany: widget.company,
+        users: widget.users ?? kMockUsers,
+        companies: widget.companies ??
+            (widget.company != null ? [widget.company!] : kMockCompanies),
+        onAddUser: (u) => widget.onAddUser?.call(u),
+        onUpdateUser: (u) => widget.onUpdateUser?.call(u),
+        onDeleteUser: (id) => widget.onDeleteUser?.call(id),
+        onBack: () => setState(() => _isUserManagementOpen = false),
+        isDarkMode: isDark,
+        onToggleDarkMode: widget.onToggleDarkMode,
+      );
+    }
+
+    // If in Admin Mode, show AdminScreen
+    if (_isAdminMode) {
+      return AdminScreen(
+        docs: _docs,
+        onUpdate: _handleUpdateDoc,
+        onDelete: _handleDeleteDoc,
+        onLogout: () => setState(() {
+          _isAdminMode = false;
+          _currentUser = null;
+        }),
+        isDarkMode: isDark,
+        onToggleDarkMode: widget.onToggleDarkMode,
+        company: widget.company,
+        onBackToCompanies: widget.onBackToCompanies,
+        currentUser: _currentUser,
+        users: widget.users,
+        onOpenUserManagement: () => setState(() => _isUserManagementOpen = true),
+      );
+    }
+
     final filtered = _filteredDocuments;
     final size = MediaQuery.of(context).size;
     final crossAxisCount = _calculateCrossAxisCount(size.width);
@@ -89,6 +169,8 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                 isPanelOpen: _isPanelOpen,
                 onTogglePanel: () => setState(() => _isPanelOpen = !_isPanelOpen),
                 isDarkMode: isDark,
+                company: widget.company,
+                onBackToCompanies: widget.onBackToCompanies,
               ),
 
               // Sticky Category Bar
@@ -240,14 +322,36 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                     _isPanelOpen = false;
                   });
                 },
-                isLoggedIn: _isLoggedIn,
+                isLoggedIn: _isAdminMode,
+                users: widget.users,
+                currentUser: _currentUser,
+                onLoginUser: (user) {
+                  setState(() {
+                    _currentUser = user;
+                  });
+                },
                 onLogin: () {
-                  setState(() => _isLoggedIn = true);
+                  setState(() {
+                    _isAdminMode = true;
+                    _isPanelOpen = false;
+                  });
                 },
                 onLogout: () {
-                  setState(() => _isLoggedIn = false);
+                  setState(() {
+                    _isAdminMode = false;
+                    _currentUser = null;
+                    _isPanelOpen = false;
+                  });
                 },
                 onClose: () => setState(() => _isPanelOpen = false),
+                company: widget.company,
+                onBackToCompanies: widget.onBackToCompanies,
+                onOpenUserManagement: () {
+                  setState(() {
+                    _isPanelOpen = false;
+                    _isUserManagementOpen = true;
+                  });
+                },
               ),
             ),
           ],

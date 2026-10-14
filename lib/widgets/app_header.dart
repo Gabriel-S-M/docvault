@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/company_item.dart';
 import '../theme/app_theme.dart';
 
 class AppHeader extends StatelessWidget {
@@ -9,6 +10,8 @@ class AppHeader extends StatelessWidget {
   final bool isPanelOpen;
   final VoidCallback onTogglePanel;
   final bool isDarkMode;
+  final CompanyItem? company;
+  final VoidCallback? onBackToCompanies;
 
   const AppHeader({
     super.key,
@@ -18,6 +21,8 @@ class AppHeader extends StatelessWidget {
     required this.isPanelOpen,
     required this.onTogglePanel,
     required this.isDarkMode,
+    this.company,
+    this.onBackToCompanies,
   });
 
   @override
@@ -67,6 +72,45 @@ class AppHeader extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
+                  if (company != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? AppColors.stone800
+                            : AppColors.stone100,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isDarkMode ? AppColors.stone700 : AppColors.stone200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            company!.icon,
+                            size: 13,
+                            color: company!.accentColor,
+                          ),
+                          const SizedBox(width: 5),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: isDesktop ? 180 : 110),
+                            child: Text(
+                              company!.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDarkMode ? AppColors.stone200 : AppColors.stone800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
 
