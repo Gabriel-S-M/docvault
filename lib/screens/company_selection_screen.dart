@@ -420,7 +420,7 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
         ),
         Center(
           child: DocVaultLoginModal(
-            users: widget.users ?? kMockUsers,
+            users: widget.users ?? const [],
             onLoginSuccess: (user) {
               setState(() => _isSuperAdminLoginOpen = false);
               widget.onSuperAdminLogin?.call(user);

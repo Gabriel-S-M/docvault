@@ -6,7 +6,7 @@ import '../theme/app_theme.dart';
 class AdminCard extends StatefulWidget {
   final DocumentItem doc;
   final ValueChanged<DocumentItem> onEdit;
-  final ValueChanged<int> onDelete;
+  final ValueChanged<String> onDelete;
   final bool isDarkMode;
 
   const AdminCard({

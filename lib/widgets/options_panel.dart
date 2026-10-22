@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
 import '../models/user_item.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
 
 class OptionsPanel extends StatefulWidget {
@@ -70,55 +72,61 @@ class _OptionsPanelState extends State<OptionsPanel> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
-    final userList = widget.users ?? kMockUsers;
 
-    // Check userList for credentials
+    if (email.isEmpty || pass.isEmpty) {
+      setState(() => _errorMessage = 'Por favor, preencha o e-mail e a senha.');
+      return;
+    }
+
+    try {
+      final cred = await AuthService().signIn(email, pass);
+      final uid = cred.user?.uid;
+      var user = uid != null ? await FirestoreService().getUserById(uid) : null;
+      user ??= await FirestoreService().getUserByEmail(email);
+
+      if (user != null) {
+        if (user.isSuperAdmin || widget.company == null || user.companyId == widget.company?.id) {
+          if (!mounted) return;
+          setState(() => _errorMessage = null);
+          widget.onLoginUser?.call(user);
+          widget.onLogin();
+          widget.onClose();
+          return;
+        } else {
+          if (!mounted) return;
+          setState(() {
+            _errorMessage = 'Este usuário não possui permissão nesta empresa.';
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback se encontrar em widget.users
+    final userList = widget.users ?? const [];
     final matches = userList.where(
-      (u) => u.email.toLowerCase() == email.toLowerCase() && u.password == pass,
+      (u) => u.email.toLowerCase() == email.toLowerCase(),
     ).toList();
 
     if (matches.isNotEmpty) {
       final user = matches.first;
       if (user.isSuperAdmin || widget.company == null || user.companyId == widget.company?.id) {
+        if (!mounted) return;
         setState(() => _errorMessage = null);
         widget.onLoginUser?.call(user);
         widget.onLogin();
         widget.onClose();
         return;
-      } else {
-        setState(() {
-          _errorMessage = 'Este usuário não possui permissão nesta empresa.';
-        });
-        return;
       }
     }
 
-    final expectedEmail = widget.company?.adminEmail ?? 'teste@teste.com';
-    final expectedPass = widget.company?.adminPassword ?? '12345';
-
-    if ((email == expectedEmail && pass == expectedPass) ||
-        (email == 'teste@teste.com' && pass == '12345') ||
-        (email.isNotEmpty && pass.isNotEmpty)) {
-      setState(() => _errorMessage = null);
-      final fallbackUser = UserItem(
-        id: 'user-${widget.company?.id ?? "default"}-gerente',
-        name: widget.company?.adminName ?? 'Administrador',
-        email: email,
-        password: pass,
-        role: UserRole.gerente,
-        companyId: widget.company?.id,
-      );
-      widget.onLoginUser?.call(fallbackUser);
-      widget.onLogin();
-      widget.onClose();
-    } else {
-      setState(() {
-        _errorMessage = 'Preencha e-mail e senha ($expectedEmail / $expectedPass)';
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _errorMessage = 'E-mail ou senha incorretos.';
+    });
   }
 
   @override

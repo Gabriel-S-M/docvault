@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
 import '../models/user_item.dart';
 import '../theme/app_theme.dart';
+import '../widgets/add_doc_modal.dart';
 import '../widgets/admin_card.dart';
 import '../widgets/document_list_tile.dart';
 import '../widgets/edit_doc_modal.dart';
@@ -12,7 +13,7 @@ import '../widgets/options_panel.dart';
 class AdminScreen extends StatefulWidget {
   final List<DocumentItem> docs;
   final ValueChanged<DocumentItem> onUpdate;
-  final ValueChanged<int> onDelete;
+  final ValueChanged<String> onDelete;
   final VoidCallback onLogout;
   final bool isDarkMode;
   final ValueChanged<bool> onToggleDarkMode;
@@ -21,6 +22,7 @@ class AdminScreen extends StatefulWidget {
   final UserItem? currentUser;
   final List<UserItem>? users;
   final VoidCallback? onOpenUserManagement;
+  final ValueChanged<DocumentItem>? onAddDoc;
 
   const AdminScreen({
     super.key,
@@ -35,6 +37,7 @@ class AdminScreen extends StatefulWidget {
     this.currentUser,
     this.users,
     this.onOpenUserManagement,
+    this.onAddDoc,
   });
 
   @override
@@ -43,6 +46,7 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   DocumentItem? _editingDoc;
+  bool _isAddingDoc = false;
   String _search = '';
   String _filterCat = 'Todos';
   SortKey _sortKey = SortKey.date;
@@ -281,6 +285,33 @@ class _AdminScreenState extends State<AdminScreen> {
                         ),
 
                         const SizedBox(width: 16),
+
+                        // Bot�o Adicionar Documento (gerente e super gerente)
+                        if (widget.currentUser != null &&
+                            (widget.currentUser!.isGerente || widget.currentUser!.isSuperGerente)) ...[
+                          ElevatedButton.icon(
+                            onPressed: () => setState(() => _isAddingDoc = true),
+                            icon: const Icon(Icons.upload_file_rounded, size: 15),
+                            label: Text(isDesktop ? 'Adicionar Documento' : '+Doc'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.indigo600,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isDesktop ? 14 : 10,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
 
                         // Doc Counter Badge
                         if (isDesktop) ...[
@@ -551,6 +582,16 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
             ),
           ],
+
+          // Add Document Modal
+          if (_isAddingDoc)
+            AddDocModal(
+              isDarkMode: isDark,
+              onSave: (newDoc) {
+                widget.onAddDoc?.call(newDoc);
+              },
+              onClose: () => setState(() => _isAddingDoc = false),
+            ),
 
           // Edit Document Side Sheet / Modal
           if (_editingDoc != null)

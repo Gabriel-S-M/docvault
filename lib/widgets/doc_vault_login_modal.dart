@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
+
 class DocVaultLoginModal extends StatefulWidget {
   final List<UserItem> users;
   final ValueChanged<UserItem> onLoginSuccess;
@@ -25,6 +29,7 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
   final _emailController = TextEditingController(text: 'admin@docvault.com');
   final _passwordController = TextEditingController(text: 'docvault123');
   bool _obscurePassword = true;
+  bool _isLoading = false;
   String? _errorMessage;
 
   @override
@@ -34,7 +39,7 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
 
@@ -45,22 +50,58 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
       return;
     }
 
-    final matchedUser = widget.users.cast<UserItem?>().firstWhere(
-          (u) =>
-              u != null &&
-              u.email.toLowerCase() == email.toLowerCase() &&
-              u.password == pass &&
-              u.isSuperAdmin,
-          orElse: () => null,
-        );
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    if (matchedUser != null) {
-      setState(() => _errorMessage = null);
-      widget.onLoginSuccess(matchedUser);
-    } else {
+    try {
+      final credential = await AuthService().signIn(email, pass);
+      final uid = credential.user?.uid;
+      if (uid == null) {
+        throw Exception('Usuário não autenticado.');
+      }
+
+      // Busca dados do usuário no Firestore
+      var user = await FirestoreService().getUserById(uid);
+      user ??= await FirestoreService().getUserByEmail(email);
+
+      if (user != null && user.isSuperAdmin) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        widget.onLoginSuccess(user);
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _errorMessage =
+              'Usuário autenticado, mas não possui permissão de Super Admin.';
+        });
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String msg = 'Falha ao autenticar.';
+      if (e.code == 'user-not-found' ||
+          e.code == 'wrong-password' ||
+          e.code == 'invalid-credential') {
+        msg = 'E-mail ou senha incorretos.';
+      } else if (e.code == 'invalid-email') {
+        msg = 'E-mail inválido.';
+      } else if (e.message != null) {
+        msg = e.message!;
+      }
       setState(() {
-        _errorMessage =
-            'Credenciais inválidas ou usuário não possui acesso Super Admin.';
+        _isLoading = false;
+        _errorMessage = msg;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Erro no login: $e';
       });
     }
   }
@@ -297,7 +338,7 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: _handleLogin,
+                          onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.indigo600,
                             foregroundColor: Colors.white,
@@ -307,13 +348,22 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Entrar no Admin',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Entrar no Admin',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

@@ -1,0 +1,45 @@
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "docvault-1436f",
+          "appId": "1:103481641385:android:df2bf9da6ed38d434f1cb8",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "docvault-1436f",
+          "configurations": {
+            "android": "1:103481641385:android:df2bf9da6ed38d434f1cb8",
+            "ios": "1:103481641385:ios:817672ddccf2e73f4f1cb8",
+            "web": "1:103481641385:web:aef8bb6b3a7878fc4f1cb8"
+          }
+        }
+      }
+    }
+  }
+}
