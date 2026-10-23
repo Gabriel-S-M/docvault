@@ -587,6 +587,7 @@ class _AdminScreenState extends State<AdminScreen> {
           if (_isAddingDoc)
             AddDocModal(
               isDarkMode: isDark,
+              companyId: widget.company?.id ?? '',
               onSave: (newDoc) {
                 widget.onAddDoc?.call(newDoc);
               },
@@ -598,6 +599,7 @@ class _AdminScreenState extends State<AdminScreen> {
             EditDocModal(
               doc: _editingDoc!,
               isDarkMode: isDark,
+              companyId: widget.company?.id ?? '',
               onSave: (updated) {
                 widget.onUpdate(updated);
               },

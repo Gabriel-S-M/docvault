@@ -1,15 +1,18 @@
 import 'dart:ui';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/document_item.dart';
 import '../theme/app_theme.dart';
+import '../services/document_storage_service.dart';
 
 class EditDocModal extends StatefulWidget {
   final DocumentItem doc;
   final ValueChanged<DocumentItem> onSave;
   final VoidCallback onClose;
   final bool isDarkMode;
+  final String companyId;
 
   const EditDocModal({
     super.key,
@@ -17,6 +20,7 @@ class EditDocModal extends StatefulWidget {
     required this.onSave,
     required this.onClose,
     required this.isDarkMode,
+    required this.companyId,
   });
 
   @override
@@ -26,10 +30,11 @@ class EditDocModal extends StatefulWidget {
 class _EditDocModalState extends State<EditDocModal> {
   late TextEditingController _titleController;
   late TextEditingController _authorController;
-  late TextEditingController _urlController;
-  late TextEditingController _thumbnailController;
   late String _category;
   late DateTime _selectedDate;
+  PlatformFile? _newPdf;
+  PlatformFile? _newImage;
+  bool _isSaving = false;
 
   // Auto-calculated fields from PDF
   late int _autoPages;
@@ -40,37 +45,17 @@ class _EditDocModalState extends State<EditDocModal> {
     super.initState();
     _titleController = TextEditingController(text: widget.doc.title);
     _authorController = TextEditingController(text: widget.doc.author);
-    _urlController = TextEditingController(text: widget.doc.url);
-    _thumbnailController = TextEditingController(text: widget.doc.thumbnail);
     _category = widget.doc.category;
     _selectedDate = widget.doc.date;
     _autoPages = widget.doc.pages;
     _autoSize = widget.doc.size;
 
-    _urlController.addListener(_onUrlChanged);
-  }
-
-  void _onUrlChanged() {
-    // When URL changes, automatically update the calculated size & pages based on PDF metadata
-    final url = _urlController.text.trim();
-    if (url.isNotEmpty && url != widget.doc.url) {
-      // Simulate automatic extraction from new PDF
-      final hash = url.hashCode.abs();
-      final calcPages = (hash % 80) + 4;
-      final calcSize = ((hash % 85) / 10 + 0.4).toStringAsFixed(1);
-      setState(() {
-        _autoPages = calcPages;
-        _autoSize = '$calcSize MB';
-      });
-    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _authorController.dispose();
-    _urlController.dispose();
-    _thumbnailController.dispose();
     super.dispose();
   }
 
@@ -94,7 +79,49 @@ class _EditDocModalState extends State<EditDocModal> {
     }
   }
 
-  void _handleSave() {
+  Future<void> _pickFile({required bool image}) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: image ? FileType.image : FileType.custom,
+      allowedExtensions: image ? null : ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.single.bytes == null) return;
+    setState(() {
+      if (image) {
+        _newImage = result.files.single;
+      } else {
+        _newPdf = result.files.single;
+        _autoSize = '${(_newPdf!.size / (1024 * 1024)).toStringAsFixed(1)} MB';
+        _autoPages = 0;
+      }
+    });
+  }
+
+  Future<void> _handleSave() async {
+    setState(() => _isSaving = true);
+    var pdfUrl = widget.doc.url;
+    var thumbnailUrl = widget.doc.thumbnail;
+    try {
+      final storage = DocumentStorageService();
+      if (_newPdf?.bytes != null) {
+        pdfUrl = await storage.upload(
+          companyId: widget.companyId,
+          documentId: widget.doc.id,
+          kind: 'document.pdf',
+          bytes: _newPdf!.bytes!,
+          contentType: 'application/pdf',
+        );
+      }
+      if (_newImage?.bytes != null) {
+        final ext = (_newImage!.extension ?? 'jpg').toLowerCase();
+        thumbnailUrl = await storage.upload(
+          companyId: widget.companyId,
+          documentId: widget.doc.id,
+          kind: 'cover.$ext',
+          bytes: _newImage!.bytes!,
+          contentType: DocumentStorageService.imageContentType(ext),
+        );
+      }
     final updatedDoc = widget.doc.copyWith(
       title: _titleController.text.trim().isEmpty
           ? widget.doc.title
@@ -106,16 +133,18 @@ class _EditDocModalState extends State<EditDocModal> {
       date: _selectedDate,
       pages: _autoPages,
       size: _autoSize,
-      url: _urlController.text.trim().isEmpty
-          ? widget.doc.url
-          : _urlController.text.trim(),
-      thumbnail: _thumbnailController.text.trim().isEmpty
-          ? widget.doc.thumbnail
-          : _thumbnailController.text.trim(),
+      url: pdfUrl,
+      thumbnail: thumbnailUrl,
     );
 
     widget.onSave(updatedDoc);
     widget.onClose();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Não foi possível enviar os arquivos: $e')));
+      }
+    }
   }
 
   @override
@@ -325,23 +354,22 @@ class _EditDocModalState extends State<EditDocModal> {
 
                         const SizedBox(height: 16),
 
-                        // PDF URL Field
-                        _buildFieldLabel('URL DO PDF'),
-                        _buildTextField(
-                          controller: _urlController,
-                          hintText: 'https://exemplo.com/documento.pdf',
+                        _buildFieldLabel('ARQUIVO PDF'),
+                        _buildFilePickerButton(
+                          label: _newPdf?.name ?? 'Selecionar novo PDF',
+                          icon: Icons.picture_as_pdf_outlined,
+                          onTap: _isSaving ? null : () => _pickFile(image: false),
                           isDark: isDark,
                         ),
 
                         const SizedBox(height: 16),
 
-                        // Thumbnail URL Field
-                        _buildFieldLabel('URL DA THUMBNAIL'),
-                        _buildTextField(
-                          controller: _thumbnailController,
-                          hintText: 'https://images.unsplash.com/...',
+                        _buildFieldLabel('IMAGEM DE CAPA'),
+                        _buildFilePickerButton(
+                          label: _newImage?.name ?? 'Selecionar nova imagem',
+                          icon: Icons.image_outlined,
+                          onTap: _isSaving ? null : () => _pickFile(image: true),
                           isDark: isDark,
-                          onChanged: (_) => setState(() {}),
                         ),
                       ],
                     ),
@@ -386,10 +414,10 @@ class _EditDocModalState extends State<EditDocModal> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _handleSave,
-                          icon: const Icon(Icons.check_rounded, size: 16),
-                          label: const Text(
-                            'Salvar alterações',
+                          onPressed: _isSaving ? null : _handleSave,
+                          icon: _isSaving ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.check_rounded, size: 16),
+                          label: Text(
+                            _isSaving ? 'Salvando...' : 'Salvar alterações',
                             style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,
@@ -432,6 +460,20 @@ class _EditDocModalState extends State<EditDocModal> {
     );
   }
 
+  Widget _buildFilePickerButton({required String label, required IconData icon, required VoidCallback? onTap, required bool isDark}) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(label, overflow: TextOverflow.ellipsis),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 48),
+        alignment: Alignment.centerLeft,
+        foregroundColor: isDark ? AppColors.stone200 : AppColors.stone700,
+        side: BorderSide(color: isDark ? AppColors.stone600 : AppColors.stone200),
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
@@ -468,9 +510,7 @@ class _EditDocModalState extends State<EditDocModal> {
   }
 
   Widget _buildThumbnailSection(bool isDark) {
-    final currentThumb = _thumbnailController.text.trim().isNotEmpty
-        ? _thumbnailController.text.trim()
-        : widget.doc.thumbnail;
+    final currentThumb = widget.doc.thumbnail;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +531,10 @@ class _EditDocModalState extends State<EditDocModal> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
+                if (_newImage?.bytes != null)
+                  Image.memory(_newImage!.bytes!, fit: BoxFit.cover)
+                else
+                  Image.network(
                   currentThumb,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {

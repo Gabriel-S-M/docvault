@@ -1,20 +1,24 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/document_item.dart';
+import '../services/document_storage_service.dart';
 import '../theme/app_theme.dart';
 
 class AddDocModal extends StatefulWidget {
   final ValueChanged<DocumentItem> onSave;
   final VoidCallback onClose;
   final bool isDarkMode;
+  final String companyId;
 
   const AddDocModal({
     super.key,
     required this.onSave,
     required this.onClose,
     required this.isDarkMode,
+    required this.companyId,
   });
 
   @override
@@ -24,48 +28,40 @@ class AddDocModal extends StatefulWidget {
 class _AddDocModalState extends State<AddDocModal> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _authorController = TextEditingController();
-  final TextEditingController _urlController = TextEditingController();
-  final TextEditingController _thumbnailController = TextEditingController();
+  PlatformFile? _pdfFile;
+  PlatformFile? _imageFile;
 
   String _category = kDocumentCategoryOptions.first;
   DateTime _selectedDate = DateTime.now();
 
-  // Metadados calculados automaticamente pela URL
+  // O tamanho vem do arquivo selecionado; a contagem de páginas ainda não é extraída.
   int _autoPages = 0;
   String _autoSize = '0.0 MB';
 
   bool _isSaving = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _urlController.addListener(_onUrlChanged);
-  }
-
-  void _onUrlChanged() {
-    final url = _urlController.text.trim();
-    if (url.isNotEmpty) {
-      final hash = url.hashCode.abs();
-      final calcPages = (hash % 80) + 4;
-      final calcSize = ((hash % 85) / 10 + 0.4).toStringAsFixed(1);
-      setState(() {
-        _autoPages = calcPages;
-        _autoSize = '$calcSize MB';
-      });
-    } else {
-      setState(() {
+  Future<void> _pickFile({required bool image}) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: image ? FileType.image : FileType.custom,
+      allowedExtensions: image ? null : ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.single.bytes == null) return;
+    setState(() {
+      if (image) {
+        _imageFile = result.files.single;
+      } else {
+        _pdfFile = result.files.single;
+        _autoSize = '${(_pdfFile!.size / (1024 * 1024)).toStringAsFixed(1)} MB';
         _autoPages = 0;
-        _autoSize = '0.0 MB';
-      });
-    }
+      }
+    });
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _authorController.dispose();
-    _urlController.dispose();
-    _thumbnailController.dispose();
     super.dispose();
   }
 
@@ -89,10 +85,9 @@ class _AddDocModalState extends State<AddDocModal> {
     }
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
     final title = _titleController.text.trim();
     final author = _authorController.text.trim();
-    final url = _urlController.text.trim();
 
     if (title.isEmpty) {
       _showError('Por favor, preencha o título do documento.');
@@ -102,27 +97,49 @@ class _AddDocModalState extends State<AddDocModal> {
       _showError('Por favor, preencha o autor do documento.');
       return;
     }
-    if (url.isEmpty) {
-      _showError('Por favor, informe a URL do PDF.');
+    if (_pdfFile?.bytes == null) {
+      _showError('Selecione o arquivo PDF.');
       return;
     }
-
     setState(() => _isSaving = true);
-
-    final newDoc = DocumentItem(
-      id: '', // Será gerado pelo Firestore
-      title: title,
-      author: author,
-      category: _category,
-      date: _selectedDate,
-      pages: _autoPages,
-      size: _autoSize,
-      url: url,
-      thumbnail: _thumbnailController.text.trim(),
-    );
-
-    widget.onSave(newDoc);
-    widget.onClose();
+    try {
+      final storageId = DateTime.now().microsecondsSinceEpoch.toString();
+      final storage = DocumentStorageService();
+      final pdfUrl = await storage.upload(
+        companyId: widget.companyId,
+        documentId: storageId,
+        kind: 'document.pdf',
+        bytes: _pdfFile!.bytes!,
+        contentType: 'application/pdf',
+      );
+      var thumbnailUrl = '';
+      if (_imageFile?.bytes != null) {
+        final ext = (_imageFile!.extension ?? 'jpg').toLowerCase();
+        thumbnailUrl = await storage.upload(
+          companyId: widget.companyId,
+          documentId: storageId,
+          kind: 'cover.$ext',
+          bytes: _imageFile!.bytes!,
+          contentType: DocumentStorageService.imageContentType(ext),
+        );
+      }
+      final newDoc = DocumentItem(
+        id: '', // Será gerado pelo Firestore
+        title: title,
+        author: author,
+        category: _category,
+        date: _selectedDate,
+        pages: _autoPages,
+        size: _autoSize,
+        url: pdfUrl,
+        thumbnail: thumbnailUrl,
+      );
+      widget.onSave(newDoc);
+      widget.onClose();
+    } catch (e) {
+      if (mounted) _showError('Não foi possível enviar os arquivos: $e');
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   void _showError(String message) {
@@ -347,23 +364,22 @@ class _AddDocModalState extends State<AddDocModal> {
 
                         const SizedBox(height: 16),
 
-                        // URL do PDF
-                        _buildFieldLabel('URL DO PDF *'),
-                        _buildTextField(
-                          controller: _urlController,
-                          hintText: 'https://exemplo.com/documento.pdf',
+                        _buildFieldLabel('ARQUIVO PDF *'),
+                        _buildFilePickerButton(
+                          label: _pdfFile?.name ?? 'Selecionar arquivo PDF',
+                          icon: Icons.picture_as_pdf_outlined,
+                          onTap: _isSaving ? null : () => _pickFile(image: false),
                           isDark: isDark,
                         ),
 
                         const SizedBox(height: 16),
 
-                        // URL da Thumbnail
-                        _buildFieldLabel('URL DA THUMBNAIL'),
-                        _buildTextField(
-                          controller: _thumbnailController,
-                          hintText: 'https://images.unsplash.com/...',
+                        _buildFieldLabel('IMAGEM DE CAPA'),
+                        _buildFilePickerButton(
+                          label: _imageFile?.name ?? 'Selecionar imagem',
+                          icon: Icons.image_outlined,
+                          onTap: _isSaving ? null : () => _pickFile(image: true),
                           isDark: isDark,
-                          onChanged: (_) => setState(() {}),
                         ),
 
                         const SizedBox(height: 8),
@@ -478,6 +494,20 @@ class _AddDocModalState extends State<AddDocModal> {
     );
   }
 
+  Widget _buildFilePickerButton({required String label, required IconData icon, required VoidCallback? onTap, required bool isDark}) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(label, overflow: TextOverflow.ellipsis),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 48),
+        alignment: Alignment.centerLeft,
+        foregroundColor: isDark ? AppColors.stone200 : AppColors.stone700,
+        side: BorderSide(color: isDark ? AppColors.stone600 : AppColors.stone200),
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
@@ -515,8 +545,6 @@ class _AddDocModalState extends State<AddDocModal> {
   }
 
   Widget _buildThumbnailPreview(bool isDark) {
-    final currentThumb = _thumbnailController.text.trim();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -533,53 +561,8 @@ class _AddDocModalState extends State<AddDocModal> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
-            child: currentThumb.isNotEmpty
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        currentThumb,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildThumbnailPlaceholder(isDark);
-                        },
-                      ),
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.65),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.image_outlined,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Prévia da Capa',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
+            child: _imageFile?.bytes != null
+                ? Image.memory(_imageFile!.bytes!, fit: BoxFit.cover)
                 : _buildThumbnailPlaceholder(isDark),
           ),
         ),
@@ -599,7 +582,7 @@ class _AddDocModalState extends State<AddDocModal> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Insira a URL da thumbnail abaixo',
+            'Selecione uma imagem de capa abaixo',
             style: TextStyle(
               fontSize: 11,
               color: isDark ? AppColors.stone500 : AppColors.stone400,
@@ -752,7 +735,7 @@ class _AddDocModalState extends State<AddDocModal> {
           ),
           const SizedBox(height: 8),
           Text(
-            'O número de páginas e o tamanho são extraídos automaticamente a partir da URL do PDF.',
+            'O tamanho é calculado automaticamente a partir do arquivo selecionado.',
             style: TextStyle(
               fontSize: 11,
               color: isDark ? AppColors.stone400 : AppColors.stone500,
