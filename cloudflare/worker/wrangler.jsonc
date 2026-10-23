@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "docvault-r2",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-23",
+  "account_id": "6fe275b98abf2851c2092fdca0a8c217",
+  "vars": {
+    "FIREBASE_PROJECT_ID": "docvault-1436f"
+  },
+  "r2_buckets": [
+    {
+      "binding": "DOCVAULT_BUCKET",
+      "bucket_name": "docvault"
+    }
+  ]
+}

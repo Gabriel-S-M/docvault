@@ -9,7 +9,7 @@ class DocumentListTile extends StatefulWidget {
   final bool isDarkMode;
   final bool isAdmin;
   final ValueChanged<DocumentItem>? onEdit;
-  final ValueChanged<int>? onDelete;
+  final ValueChanged<String>? onDelete;
 
   const DocumentListTile({
     super.key,

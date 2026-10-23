@@ -1,7 +1,9 @@
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
 import '../models/user_item.dart';
+import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/category_bar.dart';
@@ -51,11 +53,30 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
   UserItem? _currentUser;
   bool _isUserManagementOpen = false;
   DocumentItem? _openDoc;
+  StreamSubscription<List<DocumentItem>>? _docsSub;
 
   @override
   void initState() {
     super.initState();
-    _docs = List.from(widget.company?.documents ?? kMockDocuments);
+    _docs = List.from(widget.company?.documents ?? []);
+    if (widget.company != null) {
+      _docsSub = FirestoreService()
+          .streamDocuments(widget.company!.id)
+          .listen((docs) {
+        if (!mounted) return;
+        setState(() {
+          _docs = docs;
+        });
+      }, onError: (e) {
+        debugPrint('Erro ao ouvir documentos: $e');
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _docsSub?.cancel();
+    super.dispose();
   }
 
   List<DocumentItem> get _filteredDocuments {
@@ -94,19 +115,49 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
     return 4;
   }
 
-  void _handleUpdateDoc(DocumentItem updated) {
+  void _handleUpdateDoc(DocumentItem updated) async {
     setState(() {
       final index = _docs.indexWhere((d) => d.id == updated.id);
       if (index != -1) {
         _docs[index] = updated;
       }
     });
+
+    if (widget.company != null) {
+      try {
+        await FirestoreService().updateDocument(widget.company!.id, updated);
+      } catch (e) {
+        debugPrint('Erro ao atualizar documento no Firestore: $e');
+      }
+    }
   }
 
-  void _handleDeleteDoc(int id) {
+  void _handleDeleteDoc(String id) async {
     setState(() {
       _docs.removeWhere((d) => d.id == id);
     });
+
+    if (widget.company != null) {
+      try {
+        await FirestoreService().deleteDocument(widget.company!.id, id);
+      } catch (e) {
+        debugPrint('Erro ao excluir documento no Firestore: $e');
+      }
+    }
+  }
+
+  void _handleAddDoc(DocumentItem newDoc) async {
+    if (widget.company != null) {
+      try {
+        final id = await FirestoreService().addDocument(widget.company!.id, newDoc);
+        final saved = newDoc.copyWith(id: id);
+        setState(() {
+          _docs.insert(0, saved);
+        });
+      } catch (e) {
+        debugPrint('Erro ao adicionar documento no Firestore: ');
+      }
+    }
   }
 
   @override
@@ -118,9 +169,9 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
       return UserManagementScreen(
         currentUser: _currentUser!,
         currentCompany: widget.company,
-        users: widget.users ?? kMockUsers,
+        users: widget.users ?? const [],
         companies: widget.companies ??
-            (widget.company != null ? [widget.company!] : kMockCompanies),
+            (widget.company != null ? [widget.company!] : const []),
         onAddUser: (u) => widget.onAddUser?.call(u),
         onUpdateUser: (u) => widget.onUpdateUser?.call(u),
         onDeleteUser: (id) => widget.onDeleteUser?.call(id),
@@ -147,6 +198,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
         currentUser: _currentUser,
         users: widget.users,
         onOpenUserManagement: () => setState(() => _isUserManagementOpen = true),
+        onAddDoc: _handleAddDoc,
       );
     }
 

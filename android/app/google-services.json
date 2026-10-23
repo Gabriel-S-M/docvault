@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "103481641385",
+    "project_id": "docvault-1436f",
+    "storage_bucket": "docvault-1436f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:103481641385:android:df2bf9da6ed38d434f1cb8",
+        "android_client_info": {
+          "package_name": "com.example.docvault"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2U5CsMi_n2_Y-HSwonj9apn1OMXrebNI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
