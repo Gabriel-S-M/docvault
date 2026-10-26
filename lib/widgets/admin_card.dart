@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 
 class AdminCard extends StatefulWidget {
   final DocumentItem doc;
+  final VoidCallback onTap;
   final ValueChanged<DocumentItem> onEdit;
   final ValueChanged<String> onDelete;
   final bool isDarkMode;
@@ -12,6 +13,7 @@ class AdminCard extends StatefulWidget {
   const AdminCard({
     super.key,
     required this.doc,
+    required this.onTap,
     required this.onEdit,
     required this.onDelete,
     required this.isDarkMode,
@@ -90,258 +92,293 @@ class _AdminCardState extends State<AdminCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Main Card
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor, width: 1),
-              boxShadow: _isHovered
-                  ? [
-                      BoxShadow(
-                        color: isDark
-                            ? AppColors.indigo950.withValues(alpha: 0.5)
-                            : AppColors.indigo500.withValues(alpha: 0.12),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Thumbnail area
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-                  child: SizedBox(
-                    height: 140,
-                    width: double.infinity,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Background Image
-                        Container(
-                          color: isDark ? AppColors.stone800 : AppColors.stone100,
-                          child: Image.network(
-                            doc.thumbnail,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: isDark ? AppColors.stone800 : AppColors.stone200,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.picture_as_pdf_outlined,
-                                    size: 40,
-                                    color: isDark ? AppColors.stone600 : AppColors.stone400,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+          // Main Card (Tappable to view PDF)
+          GestureDetector(
+            onTap: widget.onTap,
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor, width: 1),
+                boxShadow: _isHovered
+                    ? [
+                        BoxShadow(
+                          color: isDark
+                              ? AppColors.indigo950.withValues(alpha: 0.5)
+                              : AppColors.indigo500.withValues(alpha: 0.12),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
                         ),
-
-                        // Gradient overlay
-                        Positioned.fill(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.35),
-                                ],
-                              ),
-                            ),
-                          ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
-
-                        // "PDF" tag at bottom right
-                        Positioned(
-                          bottom: 8,
-                          right: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'PDF',
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.stone700,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Pencil Edit Button on Top Right
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() => _isPopoverOpen = !_isPopoverOpen);
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: _isPopoverOpen
-                                      ? AppColors.indigo600
-                                      : Colors.white.withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
+                      ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Thumbnail area
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                    child: SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Background Image
+                          Container(
+                            color: isDark ? AppColors.stone800 : AppColors.stone100,
+                            child: Image.network(
+                              doc.thumbnail,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: isDark ? AppColors.stone800 : AppColors.stone200,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.picture_as_pdf_outlined,
+                                      size: 40,
+                                      color: isDark ? AppColors.stone600 : AppColors.stone400,
                                     ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          // Gradient overlay
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.35),
                                   ],
                                 ),
-                                child: Icon(
-                                  Icons.edit_outlined,
-                                  size: 15,
-                                  color: _isPopoverOpen
-                                      ? Colors.white
-                                      : AppColors.stone700,
+                              ),
+                            ),
+                          ),
+
+                          // "PDF" tag at bottom right
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'PDF',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.stone700,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
                             ),
                           ),
+
+                          // Hover Preview Circle (visual cue to view PDF)
+                          Positioned.fill(
+                            child: AnimatedOpacity(
+                              opacity: _isHovered ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.indigo600.withValues(alpha: 0.92),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.visibility_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Pencil Edit Button on Top Right (stops propagation to open PDF)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() => _isPopoverOpen = !_isPopoverOpen);
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: _isPopoverOpen
+                                        ? AppColors.indigo600
+                                        : Colors.white.withValues(alpha: 0.92),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.15),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.edit_outlined,
+                                    size: 15,
+                                    color: _isPopoverOpen
+                                        ? Colors.white
+                                        : AppColors.stone700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Content Details
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Category
+                        Text(
+                          doc.category.toUpperCase(),
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.2,
+                            color: isDark ? AppColors.indigo400 : AppColors.indigo600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 3),
+
+                        // Title
+                        SizedBox(
+                          height: 36,
+                          child: Text(
+                            doc.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                              color: isDark ? AppColors.stone100 : AppColors.stone900,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        // Author
+                        Text(
+                          doc.author,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark ? AppColors.stone400 : AppColors.stone500,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Divider
+                        Divider(
+                          color: isDark ? AppColors.stone700 : AppColors.stone100,
+                          height: 1,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Footer: Date and Pages / Size
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                doc.formattedDate,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: isDark ? AppColors.stone400 : AppColors.stone400,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${doc.pages} pág.',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: isDark ? AppColors.stone400 : AppColors.stone400,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                                  child: Text(
+                                    '·',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      color: isDark ? AppColors.stone600 : AppColors.stone300,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  doc.size,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: isDark ? AppColors.stone400 : AppColors.stone400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
-
-                // Content Details
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Category
-                      Text(
-                        doc.category.toUpperCase(),
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                          color: isDark ? AppColors.indigo400 : AppColors.indigo600,
-                        ),
-                      ),
-
-                      const SizedBox(height: 3),
-
-                      // Title
-                      SizedBox(
-                        height: 36,
-                        child: Text(
-                          doc.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            height: 1.25,
-                            color: isDark ? AppColors.stone100 : AppColors.stone900,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      // Author
-                      Text(
-                        doc.author,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: isDark ? AppColors.stone400 : AppColors.stone500,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // Divider
-                      Divider(
-                        color: isDark ? AppColors.stone700 : AppColors.stone100,
-                        height: 1,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Footer: Date and Pages / Size
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              doc.formattedDate,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                color: isDark ? AppColors.stone400 : AppColors.stone400,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${doc.pages} pág.',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  color: isDark ? AppColors.stone400 : AppColors.stone400,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 3),
-                                child: Text(
-                                  '·',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: isDark ? AppColors.stone600 : AppColors.stone300,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                doc.size,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  color: isDark ? AppColors.stone400 : AppColors.stone400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -458,6 +495,35 @@ class _AdminCardState extends State<AdminCard> {
                       padding: const EdgeInsets.all(10),
                       child: Column(
                         children: [
+                          // View PDF Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                setState(() => _isPopoverOpen = false);
+                                widget.onTap();
+                              },
+                              icon: const Icon(Icons.visibility_rounded, size: 14),
+                              label: const Text('Visualizar PDF'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: isDark ? AppColors.stone200 : AppColors.stone800,
+                                side: BorderSide(
+                                  color: isDark ? AppColors.stone700 : AppColors.stone300,
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 6),
+
                           // Edit Button
                           SizedBox(
                             width: double.infinity,
@@ -527,7 +593,6 @@ class _AdminCardState extends State<AdminCard> {
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         decoration: BoxDecoration(
           color: isDark ? AppColors.stone800 : AppColors.stone50,
-          borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           children: [

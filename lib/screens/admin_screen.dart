@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
@@ -9,6 +9,7 @@ import '../widgets/admin_card.dart';
 import '../widgets/document_list_tile.dart';
 import '../widgets/edit_doc_modal.dart';
 import '../widgets/options_panel.dart';
+import '../widgets/pdf_modal.dart';
 
 class AdminScreen extends StatefulWidget {
   final List<DocumentItem> docs;
@@ -46,12 +47,26 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   DocumentItem? _editingDoc;
+  DocumentItem? _openDoc;
   bool _isAddingDoc = false;
   String _search = '';
+  late final TextEditingController _searchController;
   String _filterCat = 'Todos';
   SortKey _sortKey = SortKey.date;
   ViewMode _viewMode = ViewMode.grid;
   bool _isPanelOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   List<DocumentItem> get _visibleDocs {
     final query = _search.toLowerCase().trim();
@@ -127,9 +142,32 @@ class _AdminScreenState extends State<AdminScreen> {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width >= 768;
     final crossAxisCount = _calculateCrossAxisCount(size.width);
+    final canAddDoc = widget.currentUser != null &&
+        (widget.currentUser!.isGerente || widget.currentUser!.isSuperGerente);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.stone950 : AppColors.stone50,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: (canAddDoc && !_isAddingDoc && _editingDoc == null && _openDoc == null)
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 10, right: 4),
+              child: FloatingActionButton.extended(
+                onPressed: () => setState(() => _isAddingDoc = true),
+                backgroundColor: AppColors.indigo600,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                icon: const Icon(Icons.upload_file_rounded, size: 20),
+                label: Text(
+                  isDesktop ? 'Adicionar Documento' : 'Adicionar PDF',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
           Column(
@@ -216,12 +254,16 @@ class _AdminScreenState extends State<AdminScreen> {
                                       color: widget.company!.accentColor,
                                     ),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      widget.company!.name,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark ? AppColors.stone300 : AppColors.stone700,
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(maxWidth: isDesktop ? 180 : 110),
+                                      child: Text(
+                                        widget.company!.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? AppColors.stone300 : AppColors.stone700,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -231,50 +273,55 @@ class _AdminScreenState extends State<AdminScreen> {
                           ],
                         ),
 
-                        const SizedBox(width: 16),
-
-                        // Search Input
-                        Expanded(
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 450),
-                              child: SizedBox(
-                                height: 38,
-                                child: TextField(
-                                  onChanged: (v) => setState(() => _search = v),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Filtrar documentos…',
-                                    prefixIcon: Icon(
-                                      Icons.search_rounded,
-                                      size: 18,
-                                      color: isDark ? AppColors.stone400 : AppColors.stone400,
+                        if (isDesktop) ...[
+                          const SizedBox(width: 16),
+                          // Search Input for Desktop
+                          Expanded(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 450),
+                                child: SizedBox(
+                                  height: 38,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (v) => setState(() => _search = v),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark ? AppColors.stone100 : AppColors.stone900,
                                     ),
-                                    suffixIcon: _search.isNotEmpty
-                                        ? IconButton(
-                                            icon: const Icon(Icons.close_rounded, size: 16),
-                                            splashRadius: 14,
-                                            onPressed: () => setState(() => _search = ''),
-                                          )
-                                        : null,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                                    filled: true,
-                                    fillColor: isDark ? AppColors.stone800 : AppColors.stone50,
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: isDark ? AppColors.stone600 : AppColors.stone200,
+                                    decoration: InputDecoration(
+                                      hintText: 'Filtrar documentos…',
+                                      prefixIcon: Icon(
+                                        Icons.search_rounded,
+                                        size: 18,
+                                        color: isDark ? AppColors.stone400 : AppColors.stone400,
                                       ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(
-                                        color: AppColors.indigo600,
-                                        width: 1.5,
+                                      suffixIcon: _search.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.close_rounded, size: 16),
+                                              splashRadius: 14,
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(() => _search = '');
+                                              },
+                                            )
+                                          : null,
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                                      filled: true,
+                                      fillColor: isDark ? AppColors.stone800 : AppColors.stone50,
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: isDark ? AppColors.stone600 : AppColors.stone200,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.indigo600,
+                                          width: 1.5,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -282,39 +329,35 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 16),
 
-                        const SizedBox(width: 16),
-
-                        // Bot�o Adicionar Documento (gerente e super gerente)
-                        if (widget.currentUser != null &&
-                            (widget.currentUser!.isGerente || widget.currentUser!.isSuperGerente)) ...[
-                          ElevatedButton.icon(
-                            onPressed: () => setState(() => _isAddingDoc = true),
-                            icon: const Icon(Icons.upload_file_rounded, size: 15),
-                            label: Text(isDesktop ? 'Adicionar Documento' : '+Doc'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.indigo600,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isDesktop ? 14 : 10,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                          // Botão Adicionar Documento no Header para Desktop
+                          if (canAddDoc) ...[
+                            ElevatedButton.icon(
+                              onPressed: () => setState(() => _isAddingDoc = true),
+                              icon: const Icon(Icons.upload_file_rounded, size: 15),
+                              label: const Text('Adicionar Documento'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.indigo600,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
+                            const SizedBox(width: 12),
+                          ],
 
-                        // Doc Counter Badge
-                        if (isDesktop) ...[
+                          // Doc Counter Badge
                           Text(
                             '${visible.length} docs',
                             style: GoogleFonts.jetBrainsMono(
@@ -324,6 +367,8 @@ class _AdminScreenState extends State<AdminScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
+                        ] else ...[
+                          const Spacer(),
                         ],
 
                         // Opções Button (opens OptionsPanel with user info and Sair)
@@ -433,6 +478,61 @@ class _AdminScreenState extends State<AdminScreen> {
                                     .map((c) => _buildCategoryPill(c, isDark))
                                     .toList(),
                               ),
+
+                              // Mobile Search Bar (directly below categories)
+                              if (!isDesktop) ...[
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  height: 42,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (v) => setState(() => _search = v),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark ? AppColors.stone100 : AppColors.stone900,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Filtrar documentos por nome ou autor…',
+                                      hintStyle: TextStyle(
+                                        fontSize: 13.5,
+                                        color: isDark ? AppColors.stone500 : AppColors.stone400,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search_rounded,
+                                        size: 20,
+                                        color: isDark ? AppColors.stone400 : AppColors.stone400,
+                                      ),
+                                      suffixIcon: _search.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.close_rounded, size: 18),
+                                              splashRadius: 16,
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(() => _search = '');
+                                              },
+                                            )
+                                          : null,
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
+                                      filled: true,
+                                      fillColor: isDark ? AppColors.stone800 : Colors.white,
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                          color: isDark ? AppColors.stone700 : AppColors.stone200,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.indigo600,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
 
@@ -480,6 +580,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 return AdminCard(
                                   doc: doc,
                                   isDarkMode: isDark,
+                                  onTap: () => setState(() => _openDoc = doc),
                                   onEdit: (selected) {
                                     setState(() => _editingDoc = selected);
                                   },
@@ -507,7 +608,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   doc: doc,
                                   isDarkMode: isDark,
                                   isAdmin: true,
-                                  onTap: () {},
+                                  onTap: () => setState(() => _openDoc = doc),
                                   onEdit: (selected) {
                                     setState(() => _editingDoc = selected);
                                   },
@@ -525,7 +626,8 @@ class _AdminScreenState extends State<AdminScreen> {
                               },
                             ),
 
-                          const SizedBox(height: 48),
+                          // Espaço extra no fim para que o FAB não cubra o último documento
+                          const SizedBox(height: 80),
                         ],
                       ),
                     ),
@@ -604,6 +706,14 @@ class _AdminScreenState extends State<AdminScreen> {
                 widget.onUpdate(updated);
               },
               onClose: () => setState(() => _editingDoc = null),
+            ),
+
+          // Fullscreen PDF Viewer Modal
+          if (_openDoc != null)
+            PdfModal(
+              doc: _openDoc!,
+              isDarkMode: isDark,
+              onClose: () => setState(() => _openDoc = null),
             ),
         ],
       ),

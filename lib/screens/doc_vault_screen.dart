@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/company_item.dart';
 import '../models/document_item.dart';
@@ -46,6 +46,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
   late List<DocumentItem> _docs;
   String _activeCategory = 'Todos';
   String _searchQuery = '';
+  late final TextEditingController _searchController;
   SortKey _sortKey = SortKey.date;
   ViewMode _viewMode = ViewMode.grid;
   bool _isPanelOpen = false;
@@ -58,6 +59,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
     _docs = List.from(widget.company?.documents ?? []);
     if (widget.company != null) {
       _docsSub = FirestoreService()
@@ -75,6 +77,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _docsSub?.cancel();
     super.dispose();
   }
@@ -204,6 +207,7 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
 
     final filtered = _filteredDocuments;
     final size = MediaQuery.of(context).size;
+    final isDesktop = size.width >= 768;
     final crossAxisCount = _calculateCrossAxisCount(size.width);
 
     return Scaffold(
@@ -216,7 +220,13 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
               // Top Header
               AppHeader(
                 searchQuery: _searchQuery,
-                onSearchChanged: (val) => setState(() => _searchQuery = val),
+                onSearchChanged: (val) {
+                  if (_searchController.text != val) {
+                    _searchController.text = val;
+                  }
+                  setState(() => _searchQuery = val);
+                },
+                searchController: _searchController,
                 totalCount: filtered.length,
                 isPanelOpen: _isPanelOpen,
                 onTogglePanel: () => setState(() => _isPanelOpen = !_isPanelOpen),
@@ -243,6 +253,63 @@ class _DocVaultScreenState extends State<DocVaultScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Search Bar on Mobile (above Section Title)
+                          if (!isDesktop) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: SizedBox(
+                                height: 42,
+                                child: TextField(
+                                  controller: _searchController,
+                                  onChanged: (val) => setState(() => _searchQuery = val),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Buscar documentos, autores…',
+                                    hintStyle: TextStyle(
+                                      fontSize: 13.5,
+                                      color: isDark ? AppColors.stone500 : AppColors.stone400,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.search_rounded,
+                                      size: 20,
+                                      color: isDark ? AppColors.stone400 : AppColors.stone400,
+                                    ),
+                                    suffixIcon: _searchQuery.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.close_rounded, size: 18),
+                                            splashRadius: 16,
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              setState(() => _searchQuery = '');
+                                            },
+                                          )
+                                        : null,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
+                                    filled: true,
+                                    fillColor: isDark ? AppColors.stone800 : Colors.white,
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                        color: isDark ? AppColors.stone700 : AppColors.stone200,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                        color: isDark ? AppColors.indigo500 : AppColors.indigo600,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+
                           // Section Title
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),

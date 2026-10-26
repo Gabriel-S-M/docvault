@@ -18,6 +18,7 @@ class CategoryBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: isDarkMode ? AppColors.stone900 : Colors.white,
         border: Border(
@@ -31,16 +32,16 @@ class CategoryBar extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1280),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: categories.map((cat) {
-                final isSelected = activeCategory == cat;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: InkWell(
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 8,
+                children: categories.map((cat) {
+                  final isSelected = activeCategory == cat;
+                  return InkWell(
                     onTap: () => onSelectCategory(cat),
                     borderRadius: BorderRadius.circular(20),
                     child: AnimatedContainer(
@@ -63,9 +64,9 @@ class CategoryBar extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ),

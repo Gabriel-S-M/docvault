@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/user_item.dart';
 import '../theme/app_theme.dart';
 
@@ -26,8 +25,8 @@ class DocVaultLoginModal extends StatefulWidget {
 }
 
 class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
-  final _emailController = TextEditingController(text: 'admin@docvault.com');
-  final _passwordController = TextEditingController(text: 'docvault123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
@@ -195,44 +194,6 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
 
                   const SizedBox(height: 18),
 
-                  // Demo credentials badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.indigo950.withValues(alpha: 0.6)
-                          : AppColors.indigo500.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.indigo800.withValues(alpha: 0.6)
-                            : AppColors.indigo500.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 16,
-                          color: isDark ? AppColors.indigo400 : AppColors.indigo700,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Dica de teste: admin@docvault.com / docvault123',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11,
-                              color: isDark ? AppColors.indigo400 : AppColors.indigo700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
                   // Email
                   Text(
                     'E-mail institucional',
@@ -249,12 +210,12 @@ class _DocVaultLoginModalState extends State<DocVaultLoginModal> {
                       fontSize: 13.5,
                       color: isDark ? AppColors.stone100 : AppColors.stone900,
                     ),
-                    decoration: InputDecoration(
-                      hintText: 'admin@docvault.com',
-                      prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18),
+                    decoration: const InputDecoration(
+                      hintText: 'seu@email.com',
+                      prefixIcon: Icon(Icons.mail_outline_rounded, size: 18),
                       isDense: true,
                       contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
                   ),
 

@@ -57,12 +57,8 @@ class _OptionsPanelState extends State<OptionsPanel> {
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController(
-      text: widget.company?.adminEmail ?? 'teste@teste.com',
-    );
-    _passwordController = TextEditingController(
-      text: widget.company?.adminPassword ?? '12345',
-    );
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
   }
 
   @override
@@ -279,103 +275,101 @@ class _OptionsPanelState extends State<OptionsPanel> {
                           ),
                         ),
                       ],
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 34,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              widget.onLogout();
-                              widget.onClose();
-                            },
-                            icon: const Icon(
-                              Icons.logout_rounded,
-                              size: 14,
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 34,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            widget.onLogout();
+                            widget.onClose();
+                          },
+                          icon: const Icon(
+                            Icons.logout_rounded,
+                            size: 14,
+                            color: Colors.redAccent,
+                          ),
+                          label: const Text(
+                            'Sair da conta',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
                               color: Colors.redAccent,
                             ),
-                            label: const Text(
-                              'Sair da conta',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.redAccent,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: isDark ? AppColors.stone700 : AppColors.stone200,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: 36,
+                        child: TextField(
+                          controller: _emailController,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? AppColors.stone100 : AppColors.stone900,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'E-mail',
+                            filled: true,
+                            fillColor: isDark ? AppColors.stone800 : Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                            isDense: true,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.stone600 : AppColors.stone200,
                               ),
                             ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: isDark ? AppColors.stone700 : AppColors.stone200,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: EdgeInsets.zero,
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.indigo600),
                             ),
                           ),
                         ),
-                      ],
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 36,
-                          child: TextField(
-                            controller: _emailController,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? AppColors.stone100 : AppColors.stone900,
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 36,
+                        child: TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? AppColors.stone100 : AppColors.stone900,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Senha',
+                            filled: true,
+                            fillColor: isDark ? AppColors.stone800 : Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                            isDense: true,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.stone600 : AppColors.stone200,
+                              ),
                             ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'E-mail (${widget.company?.adminEmail ?? "teste@teste.com"})',
-                              filled: true,
-                              fillColor: isDark ? AppColors.stone800 : Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                              isDense: true,
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(
-                                  color: isDark ? AppColors.stone600 : AppColors.stone200,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: AppColors.indigo600),
-                              ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.indigo600),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 36,
-                          child: TextField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? AppColors.stone100 : AppColors.stone900,
-                            ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Senha (${widget.company?.adminPassword ?? "12345"})',
-                              filled: true,
-                              fillColor: isDark ? AppColors.stone800 : Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                              isDense: true,
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(
-                                  color: isDark ? AppColors.stone600 : AppColors.stone200,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: AppColors.indigo600),
-                              ),
-                            ),
-                          ),
-                        ),
+                      ),
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 6),
                         Text(

@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 class AppHeader extends StatelessWidget {
   final String searchQuery;
   final ValueChanged<String> onSearchChanged;
+  final TextEditingController? searchController;
   final int totalCount;
   final bool isPanelOpen;
   final VoidCallback onTogglePanel;
@@ -17,6 +18,7 @@ class AppHeader extends StatelessWidget {
     super.key,
     required this.searchQuery,
     required this.onSearchChanged,
+    this.searchController,
     required this.totalCount,
     required this.isPanelOpen,
     required this.onTogglePanel,
@@ -96,7 +98,7 @@ class AppHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: isDesktop ? 180 : 110),
+                            constraints: BoxConstraints(maxWidth: isDesktop ? 180 : 130),
                             child: Text(
                               company!.name,
                               overflow: TextOverflow.ellipsis,
@@ -114,50 +116,55 @@ class AppHeader extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(width: 16),
-
-              // Search Bar
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 450),
-                    child: SizedBox(
-                      height: 38,
-                      child: TextField(
-                        onChanged: onSearchChanged,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDarkMode ? AppColors.stone100 : AppColors.stone900,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Buscar documentos, autores…',
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            size: 18,
-                            color: isDarkMode ? AppColors.stone400 : AppColors.stone400,
+              if (isDesktop) ...[
+                const SizedBox(width: 16),
+                // Search Bar for desktop
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 450),
+                      child: SizedBox(
+                        height: 38,
+                        child: TextField(
+                          controller: searchController,
+                          onChanged: onSearchChanged,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDarkMode ? AppColors.stone100 : AppColors.stone900,
                           ),
-                          suffixIcon: searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.close_rounded, size: 16),
-                                  splashRadius: 14,
-                                  onPressed: () => onSearchChanged(''),
-                                )
-                              : null,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                          filled: true,
-                          fillColor: isDarkMode ? AppColors.stone800 : AppColors.stone50,
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: isDarkMode ? AppColors.stone600 : AppColors.stone200,
+                          decoration: InputDecoration(
+                            hintText: 'Buscar documentos, autores…',
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              size: 18,
+                              color: isDarkMode ? AppColors.stone400 : AppColors.stone400,
                             ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: isDarkMode ? AppColors.indigo500 : AppColors.indigo600,
-                              width: 1.5,
+                            suffixIcon: searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 16),
+                                    splashRadius: 14,
+                                    onPressed: () {
+                                      searchController?.clear();
+                                      onSearchChanged('');
+                                    },
+                                  )
+                                : null,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                            filled: true,
+                            fillColor: isDarkMode ? AppColors.stone800 : AppColors.stone50,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDarkMode ? AppColors.stone600 : AppColors.stone200,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDarkMode ? AppColors.indigo500 : AppColors.indigo600,
+                                width: 1.5,
+                              ),
                             ),
                           ),
                         ),
@@ -165,9 +172,10 @@ class AppHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
+              ] else ...[
+                const Spacer(),
+              ],
 
               // Doc Counter Badge
               if (isDesktop) ...[

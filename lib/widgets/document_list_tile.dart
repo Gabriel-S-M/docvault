@@ -134,251 +134,289 @@ class _DocumentListTileState extends State<DocumentListTile> {
                     ),
                   ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 100,
-                  height: 70,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        doc.thumbnail,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: isDark ? AppColors.stone800 : AppColors.stone200,
-                            child: Icon(
-                              Icons.picture_as_pdf_outlined,
-                              size: 28,
-                              color: isDark ? AppColors.stone600 : AppColors.stone400,
+              // Main Row
+              Row(
+                children: [
+                  // Thumbnail (clicking thumbnail opens PDF directly)
+                  GestureDetector(
+                    onTap: widget.onTap,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 90,
+                        height: 64,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              doc.thumbnail,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: isDark ? AppColors.stone800 : AppColors.stone200,
+                                  child: Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    size: 26,
+                                    color: isDark ? AppColors.stone600 : AppColors.stone400,
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                            Positioned(
+                              bottom: 4,
+                              right: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Text(
+                                  'PDF',
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.stone700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      Positioned(
-                        bottom: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Info (Title, Category, Author)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          doc.category.toUpperCase(),
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0,
+                            color: isDark ? AppColors.indigo400 : AppColors.indigo600,
                           ),
-                          child: Text(
-                            'PDF',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.stone700,
-                            ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          doc.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: (_isHovered || _isExpanded)
+                                ? (isDark ? AppColors.indigo400 : AppColors.indigo700)
+                                : (isDark ? AppColors.stone100 : AppColors.stone900),
                           ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          doc.author,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark ? AppColors.stone400 : AppColors.stone500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Date & Size Info
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        doc.formattedShortDate,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppColors.stone300 : AppColors.stone600,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${doc.pages} pág. · ${doc.size}',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: isDark ? AppColors.stone400 : AppColors.stone400,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
 
-              const SizedBox(width: 14),
-
-              // Info (Title, Category, Author)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      doc.category.toUpperCase(),
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.0,
-                        color: isDark ? AppColors.indigo400 : AppColors.indigo600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      doc.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: (_isHovered || _isExpanded)
-                            ? (isDark ? AppColors.indigo400 : AppColors.indigo700)
-                            : (isDark ? AppColors.stone100 : AppColors.stone900),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      doc.author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? AppColors.stone400 : AppColors.stone500,
+                  if (widget.isAdmin) ...[
+                    const SizedBox(width: 8),
+                    // Interactive Chevron Arrow that flips when tapped
+                    AnimatedRotation(
+                      duration: const Duration(milliseconds: 200),
+                      turns: _isExpanded ? 0.25 : 0.0,
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: _isExpanded
+                            ? (isDark ? AppColors.indigo400 : AppColors.indigo600)
+                            : (_isHovered
+                                ? (isDark ? AppColors.indigo400 : AppColors.indigo600)
+                                : (isDark ? AppColors.stone600 : AppColors.stone300)),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
 
-              const SizedBox(width: 14),
-
-              // Date & Size Info (Slides to the left when expanded in admin mode)
-              AnimatedSlide(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                offset: Offset.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      doc.formattedShortDate,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? AppColors.stone300 : AppColors.stone600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${doc.pages} pág. · ${doc.size}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.stone400 : AppColors.stone400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Interactive Chevron Arrow that flips when tapped
-              AnimatedRotation(
-                duration: const Duration(milliseconds: 200),
-                turns: _isExpanded ? 0.5 : 0.0,
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  size: 22,
-                  color: _isExpanded
-                      ? (isDark ? AppColors.indigo400 : AppColors.indigo600)
-                      : (_isHovered
-                          ? (isDark ? AppColors.indigo400 : AppColors.indigo600)
-                          : (isDark ? AppColors.stone600 : AppColors.stone300)),
-                ),
-              ),
-
-              // Inline Action Mini-Menu for Admin (Edit and Delete)
+              // Expandable Action Menu for Admin (View, Edit and Delete)
               if (widget.isAdmin)
                 AnimatedSize(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
                   child: _isExpanded
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const SizedBox(width: 12),
-                            Container(
-                              width: 1,
-                              height: 34,
-                              color: isDark ? AppColors.stone700 : AppColors.stone200,
+                            const SizedBox(height: 10),
+                            Divider(
+                              height: 1,
+                              color: isDark ? AppColors.stone800 : AppColors.stone200,
                             ),
-                            const SizedBox(width: 10),
-
-                            // Edit Button
-                            Tooltip(
-                              message: 'Editar documento',
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    widget.onEdit?.call(doc);
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.indigo700,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.edit_rounded,
-                                          size: 14,
-                                          color: Colors.white,
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.end,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                // View PDF Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: widget.onTap,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? AppColors.stone800 : AppColors.stone100,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isDark ? AppColors.stone700 : AppColors.stone300,
                                         ),
-                                        SizedBox(width: 5),
-                                        Text(
-                                          'Editar',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.visibility_rounded,
+                                            size: 14,
+                                            color: isDark ? AppColors.stone200 : AppColors.stone700,
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(width: 8),
-
-                            // Delete Button
-                            Tooltip(
-                              message: 'Excluir documento',
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    _showDeleteConfirmation(context);
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? Colors.redAccent.withValues(alpha: 0.15)
-                                          : Colors.red.shade50,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isDark
-                                          ? Colors.redAccent.withValues(alpha: 0.3)
-                                          : Colors.red.shade200,
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            'Visualizar',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark ? AppColors.stone200 : AppColors.stone700,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.delete_outline_rounded,
-                                          size: 14,
-                                          color: Colors.redAccent,
-                                        ),
-                                        SizedBox(width: 5),
-                                        Text(
-                                          'Excluir',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.redAccent,
+                                  ),
+                                ),
+
+                                // Edit Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => widget.onEdit?.call(doc),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.indigo700,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.edit_rounded,
+                                            size: 14,
+                                            color: Colors.white,
                                           ),
-                                        ),
-                                      ],
+                                          SizedBox(width: 5),
+                                          Text(
+                                            'Editar',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+
+                                // Delete Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _showDeleteConfirmation(context),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.redAccent.withValues(alpha: 0.15)
+                                            : Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? Colors.redAccent.withValues(alpha: 0.3)
+                                              : Colors.red.shade200,
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.delete_outline_rounded,
+                                            size: 14,
+                                            color: Colors.redAccent,
+                                          ),
+                                          SizedBox(width: 5),
+                                          Text(
+                                            'Excluir',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.redAccent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         )
