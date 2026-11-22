@@ -119,36 +119,43 @@ class _DocVaultAdminScreenState extends State<DocVaultAdminScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Logo & System Tag
-                        Row(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 620;
+
+                        final brandWidget = Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 10,
+                          runSpacing: 4,
                           children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColors.indigo600,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.shield_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.indigo600,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.shield_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'DocVault',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.3,
+                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'DocVault',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
-                                color: isDark ? AppColors.stone100 : AppColors.stone900,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2.5),
@@ -171,10 +178,12 @@ class _DocVaultAdminScreenState extends State<DocVaultAdminScreen> {
                               ),
                             ),
                           ],
-                        ),
+                        );
 
-                        // Action Buttons: Users Management + Theme Toggle + Logout
-                        Row(
+                        final actionsWidget = Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 10,
+                          runSpacing: 6,
                           children: [
                             ElevatedButton.icon(
                               onPressed: widget.onOpenUserManagement,
@@ -200,9 +209,6 @@ class _DocVaultAdminScreenState extends State<DocVaultAdminScreen> {
                                 ),
                               ),
                             ),
-
-                            const SizedBox(width: 10),
-
                             InkWell(
                               onTap: () => widget.onToggleDarkMode(!isDark),
                               borderRadius: BorderRadius.circular(8),
@@ -225,9 +231,6 @@ class _DocVaultAdminScreenState extends State<DocVaultAdminScreen> {
                                 ),
                               ),
                             ),
-
-                            const SizedBox(width: 10),
-
                             OutlinedButton.icon(
                               onPressed: widget.onLogout,
                               icon: const Icon(Icons.logout_rounded, size: 14),
@@ -244,8 +247,28 @@ class _DocVaultAdminScreenState extends State<DocVaultAdminScreen> {
                               ),
                             ),
                           ],
-                        ),
-                      ],
+                        );
+
+                        if (isCompact) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              brandWidget,
+                              const SizedBox(height: 10),
+                              actionsWidget,
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            brandWidget,
+                            actionsWidget,
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

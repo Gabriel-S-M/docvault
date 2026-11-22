@@ -63,41 +63,50 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
                     ),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width < 540 ? 16 : 20,
+                  vertical: MediaQuery.of(context).size.width < 540 ? 10 : 12,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // DocVault Brand
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 540;
+
+                        final brandWidget = Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 10,
+                          runSpacing: 4,
                           children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColors.indigo600,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.description_outlined,
-                                color: Colors.white,
-                                size: 18,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.indigo600,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.description_outlined,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'DocVault',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.3,
+                                    color: isDark ? AppColors.stone100 : AppColors.stone900,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'DocVault',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
-                                color: isDark ? AppColors.stone100 : AppColors.stone900,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
@@ -117,10 +126,9 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
                               ),
                             ),
                           ],
-                        ),
+                        );
 
-                        // Right actions: Theme Toggle + Discreet Super Admin Login Trigger
-                        Row(
+                        final actionsWidget = Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // Theme Toggle Button
@@ -180,8 +188,29 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
                               ),
                             ),
                           ],
-                        ),
-                      ],
+                        );
+
+                        if (isCompact) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              brandWidget,
+                              const SizedBox(height: 10),
+                              actionsWidget,
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            brandWidget,
+                            actionsWidget,
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -190,7 +219,10 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
           // Main Body
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width < 500 ? 16 : 24,
+                vertical: 36,
+              ),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1100),
@@ -352,10 +384,10 @@ class _CompanySelectionScreenState extends State<CompanySelectionScreen> {
                               alignment: WrapAlignment.center,
                               children: filtered.map((company) {
                                 final cardWidth = isWide
-                                    ? (constraints.maxWidth - 24) / 2
-                                    : constraints.maxWidth;
+                                    ? ((constraints.maxWidth - 24) / 2).clamp(320.0, 520.0)
+                                    : constraints.maxWidth.clamp(0.0, 520.0);
                                 return SizedBox(
-                                  width: cardWidth.clamp(320.0, 520.0),
+                                  width: cardWidth,
                                   child: _CompanyCard(
                                     company: company,
                                     isDarkMode: isDark,
@@ -472,7 +504,7 @@ class _CompanyCardState extends State<_CompanyCard> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(MediaQuery.of(context).size.width < 400 ? 16 : 24),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(16),
@@ -582,11 +614,15 @@ class _CompanyCardState extends State<_CompanyCard> {
               const SizedBox(height: 16),
 
               // Bottom Row: Stats & Action Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
                 children: [
                   // Documents counter pill
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.description_outlined,

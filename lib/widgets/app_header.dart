@@ -98,7 +98,11 @@ class AppHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: isDesktop ? 180 : 130),
+                            constraints: BoxConstraints(
+                              maxWidth: isDesktop
+                                  ? 180
+                                  : (MediaQuery.of(context).size.width < 360 ? 80 : 130),
+                            ),
                             child: Text(
                               company!.name,
                               overflow: TextOverflow.ellipsis,

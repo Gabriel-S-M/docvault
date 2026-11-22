@@ -205,56 +205,61 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               ),
                             ),
                             const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Gerenciamento de Usuários',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.3,
-                                        color: isDark ? AppColors.stone100 : AppColors.stone900,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? AppColors.indigo950
-                                            : AppColors.indigo500.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        widget.currentUser.isSuperAdmin
-                                            ? 'ACESSO GLOBAL'
-                                            : (widget.currentCompany?.name.toUpperCase() ??
-                                                'EMPRESA'),
-                                        style: GoogleFonts.jetBrainsMono(
-                                          fontSize: 9.5,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    children: [
+                                      Text(
+                                        'Gerenciamento de Usuários',
+                                        style: TextStyle(
+                                          fontSize: 16,
                                           fontWeight: FontWeight.w700,
-                                          color: isDark
-                                              ? AppColors.indigo400
-                                              : AppColors.indigo700,
+                                          letterSpacing: -0.3,
+                                          color: isDark ? AppColors.stone100 : AppColors.stone900,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  widget.currentUser.isSuperAdmin
-                                      ? 'Controle de Super Admins, Super Gerentes e Gerentes de Empresas'
-                                      : 'Gestão dos Gerentes autorizados a gerenciar documentos da empresa',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: isDark ? AppColors.stone400 : AppColors.stone500,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? AppColors.indigo950
+                                              : AppColors.indigo500.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          widget.currentUser.isSuperAdmin
+                                              ? 'ACESSO GLOBAL'
+                                              : (widget.currentCompany?.name.toUpperCase() ??
+                                                  'EMPRESA'),
+                                          style: GoogleFonts.jetBrainsMono(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? AppColors.indigo400
+                                                : AppColors.indigo700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  if (isDesktop)
+                                    Text(
+                                      widget.currentUser.isSuperAdmin
+                                          ? 'Controle de Super Admins, Super Gerentes e Gerentes de Empresas'
+                                          : 'Gestão dos Gerentes autorizados a gerenciar documentos da empresa',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: isDark ? AppColors.stone400 : AppColors.stone500,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
